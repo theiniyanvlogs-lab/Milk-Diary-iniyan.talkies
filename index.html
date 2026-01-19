@@ -12,6 +12,8 @@ body{font-family:Arial;margin:0;background:#f5f5f5}
 .box{background:#fff;padding:20px;border-radius:8px;width:100%;max-width:420px;text-align:center}
 .header{background:#fff;padding:12px;text-align:center;font-size:22px;font-weight:bold;position:relative}
 .badge{position:absolute;right:10px;top:10px;background:#ff9800;color:#fff;padding:4px 10px;border-radius:15px;font-size:12px}
+#subWhatsapp{position:absolute;right:10px;top:38px}
+#subWhatsapp button{background:#25D366;color:#fff;border:none;padding:4px 8px;border-radius:10px;font-size:11px}
 
 button,input,textarea{width:100%;padding:12px;margin-top:8px;font-size:16px}
 button{border:none;border-radius:6px}
@@ -41,6 +43,10 @@ button{border:none;border-radius:6px}
   <h3>Milk Diary – Locked</h3>
   <input id="unlockPwd" placeholder="Enter Password">
   <button class="blue" onclick="unlockApp()">Unlock</button>
+  <hr>
+  <button style="background:#25D366;color:white" onclick="openTrialWhatsapp()">
+   📞 Get Trial Password
+  </button>
  </div>
 </div>
 
@@ -50,6 +56,9 @@ button{border:none;border-radius:6px}
  <div class="header">
   Milk Diary
   <div id="statusBadge" class="badge"></div>
+  <div id="subWhatsapp">
+    <button onclick="openSubWhatsapp()">📞 Get 1 Year Subscription</button>
+  </div>
  </div>
 
  <div class="month-nav">
@@ -84,7 +93,7 @@ button{border:none;border-radius:6px}
  </div>
 </div>
 
-<!-- ADMIN MODAL -->
+<!-- ADMIN -->
 <div id="adminModal" class="modal">
  <div class="modal-box">
   <h3>Admin Settings</h3>
@@ -98,7 +107,7 @@ button{border:none;border-radius:6px}
  </div>
 </div>
 
-<!-- BILL MODAL -->
+<!-- BILL -->
 <div id="billModal" class="modal">
  <div class="modal-box">
   <pre id="billPreview"></pre>
@@ -107,7 +116,7 @@ button{border:none;border-radius:6px}
  </div>
 </div>
 
-<!-- DATE PICKER MODAL -->
+<!-- DATE PICKER -->
 <div id="datePickerModal" class="modal">
  <div class="modal-box">
   <div class="month-nav">
@@ -121,12 +130,13 @@ button{border:none;border-radius:6px}
 
 <script>
 const REGISTRY_URL="registry.json";
+const ADMIN_PHONE="917200893968";
 
 let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,from=null,to=null;
 let pickerDate=new Date(),pickingMode=null;
 
-/* UNLOCK */
+/* Unlock */
 async function unlockApp(){
  let pwd=unlockPwd.value.trim();
  let registry=await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
@@ -149,7 +159,7 @@ function startApp(){
  renderCalendar();
 }
 
-/* SUBSCRIPTION BADGE */
+/* Subscription badge */
 function checkSubscription(){
  const badge=statusBadge;
  const today=new Date();
@@ -167,7 +177,15 @@ function checkSubscription(){
  }
 }
 
-/* CALENDAR */
+/* WhatsApp request buttons */
+function openTrialWhatsapp(){
+ window.open("https://wa.me/"+ADMIN_PHONE+"?text=Need Trial Unlock Password");
+}
+function openSubWhatsapp(){
+ window.open("https://wa.me/"+ADMIN_PHONE+"?text=Need 1 Year Subscription Password");
+}
+
+/* Calendar */
 function key(d){return d.toISOString().slice(0,10);}
 function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
 
@@ -215,7 +233,7 @@ function saveExtra(){
  renderCalendar();
 }
 
-/* DATE PICKER */
+/* Date Picker */
 function setMode(m){pickingMode=m;openDatePicker();}
 function openDatePicker(){
  pickerDate=new Date();
@@ -239,7 +257,6 @@ function renderPickerCalendar(){
   pickerCalendar.appendChild(el);
  }
 }
-
 function selectPickerDate(d,event){
  document.querySelectorAll("#pickerCalendar .day").forEach(x=>x.classList.remove("active"));
  event.target.classList.add("active");
@@ -250,7 +267,7 @@ function selectPickerDate(d,event){
  if(pickingMode==="detailTo"){datePickerModal.style.display="none";viewDetailedReportByDate(window.df,d);return;}
 }
 
-/* ADMIN */
+/* Admin */
 function openAdmin(){adminModal.style.display="block";}
 function saveAdmin(){
  localStorage.custPlot=custPlot.value;
@@ -262,7 +279,7 @@ function saveAdmin(){
  adminModal.style.display="none";
 }
 
-/* FINAL BILL */
+/* Final Bill */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
@@ -277,11 +294,11 @@ function buildBill(s,e){
  let days=Math.floor((e-s)/86400000)+1;
  let base=daily*days,extra=0,not=0;
  for(let k in data){
-   let d=new Date(k);
-   if(d>=s&&d<=e){
-     extra+=data[k].extra||0;
-     not+=data[k].not||0;
-   }
+  let d=new Date(k);
+  if(d>=s&&d<=e){
+    extra+=data[k].extra||0;
+    not+=data[k].not||0;
+  }
  }
  let finalMilk=base+extra-not;
  let milkAmt=finalMilk*rate;
@@ -290,8 +307,8 @@ function buildBill(s,e){
  billPreview.innerText=
 `MILK DIARY BILL
 
-Door No : ${localStorage.custPlot || ""}
-Address : ${localStorage.custAddr || ""}
+Door No : ${localStorage.custPlot||""}
+Address : ${localStorage.custAddr||""}
 
 Period : ${fmt(s)} to ${fmt(e)}
 
@@ -308,42 +325,47 @@ Service Charge:
 ₹${service}
 
 --------------------------------
-
 GRAND TOTAL:
 ₹${total}
-
 --------------------------------
 Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
 
-/* DETAILED REPORT */
+/* Detailed Report WITH DATES */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
 
 function viewDetailedReportByDate(s,e){
  let extraLines="",notLines="";
  let extraTotal=0,notTotal=0;
+
  for(let k in data){
   let d=new Date(k);
-  if(d>=s&&d<=e){
-   if(data[k].extra){extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";extraTotal+=data[k].extra;}
-   if(data[k].not){notLines+=fmt(d)+" : "+data[k].not+" pkt\n";notTotal+=data[k].not;}
+  if(d>=s && d<=e){
+   if(data[k].extra){
+     extraLines += fmt(d)+" : "+data[k].extra+" pkt\n";
+     extraTotal += data[k].extra;
+   }
+   if(data[k].not){
+     notLines += fmt(d)+" : "+data[k].not+" pkt\n";
+     notTotal += data[k].not;
+   }
   }
  }
+
  if(extraLines==="") extraLines="Nil\n";
  if(notLines==="") notLines="Nil\n";
 
  billPreview.innerText=
 `EXTRA SUPPLIED & NOT SUPPLIED MILK REPORT
 
-Door No : ${localStorage.custPlot || ""}
-Address : ${localStorage.custAddr || ""}
+Door No : ${localStorage.custPlot||""}
+Address : ${localStorage.custAddr||""}
 
 Period : ${fmt(s)} to ${fmt(e)}
 
 --------------------------------
-
 EXTRA SUPPLIED
 ${extraLines}
 Total Extra : ${extraTotal} pkt
@@ -358,7 +380,7 @@ Powered by Milk Diary - iniyan.talkies`;
  billModal.style.display="block";
 }
 
-/* SEND TO WHATSAPP */
+/* WhatsApp Send */
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
