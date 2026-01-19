@@ -12,103 +12,42 @@ body{font-family:Arial;margin:0;background:#f5f5f5}
 .box{background:#fff;padding:20px;border-radius:8px;width:100%;max-width:420px;text-align:center}
 
 .header{
- background:#fff;
- padding:12px;
- text-align:center;
- font-size:22px;
- font-weight:bold;
- position:relative;
+ background:#fff;padding:12px;text-align:center;
+ font-size:22px;font-weight:bold;position:relative;
 }
-
 .badge{
- position:absolute;
- right:10px;
- top:10px;
- background:#ff9800;
- color:#fff;
- padding:4px 10px;
- border-radius:15px;
- font-size:12px;
+ position:absolute;right:10px;top:10px;
+ background:#ff9800;color:#fff;padding:4px 10px;
+ border-radius:15px;font-size:12px;
 }
 
-/* WhatsApp Renewal Box */
 #subWhatsapp{
- position:absolute;
- right:10px;
- top:38px;
- display:none;
- text-align:right;
- pointer-events:none; /* prevents overlay blocking clicks */
+ position:absolute;right:10px;top:38px;
+ display:none;text-align:right;pointer-events:none;
 }
-
-/* Only the button inside is clickable */
 #subWhatsapp button{
- background:#25D366;
- color:white;
- border:none;
- padding:4px 8px;
- border-radius:12px;
- font-size:11px;
- pointer-events:auto;
+ background:#25D366;color:white;border:none;
+ padding:4px 8px;border-radius:12px;
+ font-size:11px;pointer-events:auto;
 }
 
-button,input,textarea{
- width:100%;
- padding:12px;
- margin-top:8px;
- font-size:16px
-}
-
+button,input,textarea{width:100%;padding:12px;margin-top:8px;font-size:16px}
 button{border:none;border-radius:6px}
 .blue{background:#2196f3;color:#fff}
 .green{background:#4caf50;color:#fff}
 .red{background:#f44336;color:#fff}
 .grey{background:#9e9e9e;color:#fff}
 
-.month-nav{
- display:flex;
- justify-content:space-between;
- padding:10px;
- background:#eee
-}
-
-.calendar{
- display:grid;
- grid-template-columns:repeat(7,1fr);
- gap:8px;
- padding:10px
-}
-
-.day{
- background:#ddd;
- padding:12px;
- border-radius:6px;
- text-align:center
-}
-
+.month-nav{display:flex;justify-content:space-between;padding:10px;background:#eee}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:10px}
+.day{background:#ddd;padding:12px;border-radius:6px;text-align:center}
 .day.red{background:#e53935;color:#fff}
 .day.green{background:#43a047;color:#fff}
 .day.blue{background:#1e88e5;color:#fff}
 .day.active{outline:3px solid #000}
 
-.modal{
- display:none;
- position:fixed;
- inset:0;
- background:rgba(0,0,0,.6);
- z-index:999
-}
-
-.modal-box{
- background:#fff;
- margin:5% auto;
- padding:15px;
- width:90%;
- max-height:80%;
- overflow:auto
-}
-
-.small{font-size:13px;color:#555}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999}
+.modal-box{background:#fff;margin:5% auto;padding:15px;width:90%;max-height:80%;overflow:auto}
 
 @media print{
  body *{visibility:hidden}
@@ -129,13 +68,12 @@ button{border:none;border-radius:6px}
 
   <hr style="margin:15px 0">
 
-  <!-- Trial Request -->
   <button style="background:#25D366;color:white;border:none;border-radius:6px;font-size:14px"
    onclick="openTrialWhatsapp()">
-   📞 If you want Trial Version Unlock Password – Click Here
+   📞 Trial Unlock Password – Click Here
   </button>
 
-  <p class="small">One password works only on one phone</p>
+  <p style="font-size:13px;color:#555">One password works only on one phone</p>
  </div>
 </div>
 
@@ -146,7 +84,6 @@ button{border:none;border-radius:6px}
   Milk Diary
   <div class="badge" id="statusBadge"></div>
 
-  <!-- Renewal WhatsApp -->
   <div id="subWhatsapp">
     <div style="font-size:11px;font-weight:bold;">Iniyan Talkies</div>
     <button onclick="openSubWhatsapp()">📞 1 Year Subscription</button>
@@ -171,7 +108,6 @@ button{border:none;border-radius:6px}
   <button class="green" onclick="saveExtra()">Save / Update Extra Milk</button>
 
   <hr>
-
   <b>Customer Period Bill</b>
   <input id="fromDate" readonly onclick="setMode('from')" placeholder="From Date">
   <input id="toDate" readonly onclick="setMode('to')" placeholder="To Date">
@@ -206,27 +142,41 @@ button{border:none;border-radius:6px}
  </div>
 </div>
 
+<!-- DATE PICKER MODAL -->
+<div id="datePickerModal" class="modal">
+  <div class="modal-box">
+    <h3>Select Date</h3>
+    <div class="month-nav">
+      <button onclick="changePickerMonth(-1)">⬅️</button>
+      <b id="pickerMonthTitle"></b>
+      <button onclick="changePickerMonth(1)">➡️</button>
+    </div>
+    <div class="calendar" id="pickerCalendar"></div>
+    <button class="grey" onclick="datePickerModal.style.display='none'">Close</button>
+  </div>
+</div>
+
 <script>
 
-/* ===== ADMIN WHATSAPP NUMBER ===== */
-const ADMIN_WHATSAPP = "917200893968";
+/* ===== ADMIN WHATSAPP ===== */
+const ADMIN_WHATSAPP="917200893968";
 
 /* ===== DEVICE ID ===== */
-let DEVICE_ID = localStorage.MDT_DEVICE;
+let DEVICE_ID=localStorage.MDT_DEVICE;
 if(!DEVICE_ID){
  DEVICE_ID="MDT-"+Math.random().toString(36).slice(2);
  localStorage.MDT_DEVICE=DEVICE_ID;
 }
 
-/* ===== REGISTRY FILE ===== */
-const REGISTRY_URL = "registry.json";
+/* ===== REGISTRY ===== */
+const REGISTRY_URL="registry.json";
 
-/* ===== UNLOCK SYSTEM ===== */
+/* ===== UNLOCK ===== */
 async function unlockApp(){
- let pwd = unlockPwd.value.trim();
+ let pwd=unlockPwd.value.trim();
  if(!pwd) return alert("Enter password");
 
- let registry = await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
+ let registry=await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
 
  if(!registry[pwd]) return alert("Invalid Password");
 
@@ -235,92 +185,75 @@ async function unlockApp(){
    return;
  }
 
- localStorage.MDT_UNLOCKED = pwd;
+ localStorage.MDT_UNLOCKED=pwd;
 
- // Start Trial
  if(!localStorage.TRIAL_START && !localStorage.PAID_START){
-   localStorage.TRIAL_START = new Date().toISOString();
+   localStorage.TRIAL_START=new Date().toISOString();
    alert("30 Days Trial Activated");
  }
 
- // Paid Subscription
  if(registry[pwd].type=="paid"){
-   localStorage.PAID_START = new Date().toISOString();
+   localStorage.PAID_START=new Date().toISOString();
    localStorage.removeItem("TRIAL_START");
  }
 
  startApp();
 }
 
-/* ===== START APP ===== */
+/* ===== START APP (FIXED) ===== */
 function startApp(){
- lockScreen.style.display="none";
- app.style.display="block";
+ document.getElementById("lockScreen").remove();
+ document.getElementById("app").style.display="block";
  checkSubscription();
  renderCalendar();
 }
 
-/* ===== SUBSCRIPTION STATUS ===== */
+/* ===== SUBSCRIPTION ===== */
 function checkSubscription(){
- const badge = statusBadge;
- const subBtn = document.getElementById("subWhatsapp");
- const today = new Date();
+ const badge=statusBadge;
+ const subBtn=document.getElementById("subWhatsapp");
+ const today=new Date();
 
- // Paid
  if(localStorage.PAID_START){
-   let start=new Date(localStorage.PAID_START);
-   let end=new Date(start);
-   end.setFullYear(end.getFullYear()+1);
-
-   if(today<=end){
-     badge.innerText="Paid Active till "+end.toLocaleDateString();
-     subBtn.style.display="none";
-     return;
-   }else{
-     badge.innerText="Subscription Expired";
-     subBtn.style.display="block";
-     return;
+   let s=new Date(localStorage.PAID_START);
+   let e=new Date(s); e.setFullYear(e.getFullYear()+1);
+   if(today<=e){
+     badge.innerText="Paid Active till "+e.toLocaleDateString();
+     subBtn.style.display="none"; return;
    }
+   badge.innerText="Subscription Expired";
+   subBtn.style.display="block"; return;
  }
 
- // Trial
  if(localStorage.TRIAL_START){
-   let start=new Date(localStorage.TRIAL_START);
-   let end=new Date(start);
-   end.setDate(end.getDate()+30);
-   let diff=Math.ceil((end-today)/(1000*60*60*24));
-
-   if(today<=end){
+   let s=new Date(localStorage.TRIAL_START);
+   let e=new Date(s); e.setDate(e.getDate()+30);
+   let diff=Math.ceil((e-today)/(1000*60*60*24));
+   if(today<=e){
      badge.innerText="Trial - "+diff+" Days Left";
-     subBtn.style.display="none";
-     return;
-   }else{
-     badge.innerText="Trial Expired";
-     subBtn.style.display="block";
-     return;
+     subBtn.style.display="none"; return;
    }
+   badge.innerText="Trial Expired";
+   subBtn.style.display="block"; return;
  }
 
  badge.innerText="Not Activated";
  subBtn.style.display="block";
 }
 
-/* ===== WHATSAPP FUNCTIONS ===== */
-
+/* ===== WHATSAPP ===== */
 function openTrialWhatsapp(){
- let msg="Hello Iniyan Talkies!\n\nI want Trial Version Unlock Password.\n\nMy Device ID: "+DEVICE_ID;
+ let msg="Hello Iniyan Talkies!\n\nI want Trial Unlock Password.\n\nMy Device ID: "+DEVICE_ID;
  window.open("https://wa.me/"+ADMIN_WHATSAPP+"?text="+encodeURIComponent(msg));
 }
-
 function openSubWhatsapp(){
- let msg="Hello Iniyan Talkies!\n\nI want to renew 1 Year Subscription.\n\nMy Device ID: "+DEVICE_ID;
+ let msg="Hello Iniyan Talkies!\n\nI want 1 Year Subscription.\n\nMy Device ID: "+DEVICE_ID;
  window.open("https://wa.me/"+ADMIN_WHATSAPP+"?text="+encodeURIComponent(msg));
 }
 
-/* ===== CALENDAR SYSTEM ===== */
-
+/* ===== MAIN CALENDAR ===== */
 let data=JSON.parse(localStorage.MILK_DATA||"{}");
-let current=new Date(),selectedDate=null,mode=null,from=null,to=null;
+let current=new Date(),selectedDate=null,from=null,to=null;
 
 function key(d){return d.toISOString().slice(0,10);}
 function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
@@ -329,27 +262,22 @@ function renderCalendar(){
  monthTitle.innerText=current.toLocaleString("default",{month:"long",year:"numeric"});
  calendar.innerHTML="";
  let days=new Date(current.getFullYear(),current.getMonth()+1,0).getDate();
-
  for(let i=1;i<=days;i++){
-   let d=new Date(current.getFullYear(),current.getMonth(),i);
-   let el=document.createElement("div");
-   el.className="day";
-   let k=key(d);
-
-   if(data[k]){
-     if(data[k].not && data[k].extra) el.classList.add("blue");
-     else if(data[k].not) el.classList.add("red");
-     else if(data[k].extra) el.classList.add("green");
-   }
-
-   el.innerText=i;
-   el.onclick=()=>selectDate(d,el);
-   calendar.appendChild(el);
+  let d=new Date(current.getFullYear(),current.getMonth(),i);
+  let el=document.createElement("div");
+  el.className="day";
+  let k=key(d);
+  if(data[k]){
+   if(data[k].not && data[k].extra) el.classList.add("blue");
+   else if(data[k].not) el.classList.add("red");
+   else if(data[k].extra) el.classList.add("green");
+  }
+  el.innerText=i;
+  el.onclick=()=>selectDate(d,el);
+  calendar.appendChild(el);
  }
 }
-
 function changeMonth(v){current.setMonth(current.getMonth()+v);renderCalendar();}
-function setMode(m){mode=m;}
 
 function selectDate(d,el){
  document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
@@ -358,29 +286,57 @@ function selectDate(d,el){
  let k=key(d);
  notQty.value=data[k]?.not||"";
  extraQty.value=data[k]?.extra||"";
- if(mode==="from"){from=d;fromDate.value=fmt(d)}
- if(mode==="to"){to=d;toDate.value=fmt(d)}
 }
-
 function saveNot(){
- if(!selectedDate) return;
- let k=key(selectedDate);
- data[k]=data[k]||{};
+ if(!selectedDate)return;
+ let k=key(selectedDate); data[k]=data[k]||{};
  data[k].not=parseInt(notQty.value)||0;
- localStorage.MILK_DATA=JSON.stringify(data);
- renderCalendar();
+ localStorage.MILK_DATA=JSON.stringify(data); renderCalendar();
 }
-
 function saveExtra(){
- if(!selectedDate) return;
- let k=key(selectedDate);
- data[k]=data[k]||{};
+ if(!selectedDate)return;
+ let k=key(selectedDate); data[k]=data[k]||{};
  data[k].extra=parseInt(extraQty.value)||0;
- localStorage.MILK_DATA=JSON.stringify(data);
- renderCalendar();
+ localStorage.MILK_DATA=JSON.stringify(data); renderCalendar();
 }
 
-/* ===== ADMIN SETTINGS ===== */
+/* ===== DATE PICKER ===== */
+let pickerDate=new Date();
+let pickingMode=null;
+
+function setMode(mode){
+ pickingMode=mode;
+ openDatePicker();
+}
+function openDatePicker(){
+ pickerDate=new Date();
+ renderPickerCalendar();
+ datePickerModal.style.display="block";
+}
+function changePickerMonth(v){
+ pickerDate.setMonth(pickerDate.getMonth()+v);
+ renderPickerCalendar();
+}
+function renderPickerCalendar(){
+ pickerMonthTitle.innerText=pickerDate.toLocaleString("default",{month:"long",year:"numeric"});
+ pickerCalendar.innerHTML="";
+ let days=new Date(pickerDate.getFullYear(),pickerDate.getMonth()+1,0).getDate();
+ for(let i=1;i<=days;i++){
+  let d=new Date(pickerDate.getFullYear(),pickerDate.getMonth(),i);
+  let el=document.createElement("div");
+  el.className="day";
+  el.innerText=i;
+  el.onclick=()=>selectPickerDate(d);
+  pickerCalendar.appendChild(el);
+ }
+}
+function selectPickerDate(d){
+ if(pickingMode==="from"){from=d;fromDate.value=fmt(d);}
+ if(pickingMode==="to"){to=d;toDate.value=fmt(d);}
+ datePickerModal.style.display="none";
+}
+
+/* ===== ADMIN ===== */
 function openAdmin(){
  custPlot.value=localStorage.custPlot||"";
  custAddr.value=localStorage.custAddr||"";
@@ -390,7 +346,6 @@ function openAdmin(){
  milkmanInput.value=localStorage.milkman||"";
  adminModal.style.display="block";
 }
-
 function saveAdmin(){
  localStorage.custPlot=custPlot.value;
  localStorage.custAddr=custAddr.value;
@@ -401,19 +356,16 @@ function saveAdmin(){
  adminModal.style.display="none";
 }
 
-/* ===== BILL SYSTEM ===== */
-
+/* ===== BILL ===== */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
  buildBill(s,e);
 }
-
 function viewPeriodBill(){
- if(!from||!to) return alert("Select dates");
+ if(!from||!to) return alert("Select From & To dates");
  buildBill(from,to);
 }
-
 function buildBill(s,e){
  let daily=+localStorage.dailyQty||0;
  let rate=+localStorage.rate||0;
@@ -423,17 +375,11 @@ function buildBill(s,e){
  let extra=0,not=0,extraLines="",notLines="";
 
  for(let k in data){
-   let d=new Date(k);
-   if(d>=s && d<=e){
-     if(data[k].extra){
-       extra+=data[k].extra;
-       extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";
-     }
-     if(data[k].not){
-       not+=data[k].not;
-       notLines+=fmt(d)+" : "+data[k].not+" pkt\n";
-     }
-   }
+  let d=new Date(k);
+  if(d>=s && d<=e){
+   if(data[k].extra){extra+=data[k].extra;extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";}
+   if(data[k].not){not+=data[k].not;notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
+  }
  }
 
  let finalMilk=base+extra-not;
@@ -450,7 +396,7 @@ Address:
 ${localStorage.custAddr||""}
 
 Period:
-${fmt(s)}  to  ${fmt(e)}
+${fmt(s)} to ${fmt(e)}
 
 --------------------------------
 
@@ -493,7 +439,6 @@ Powered by Milk Diary - iniyan.talkies`;
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
-
 </script>
 
 <script>
