@@ -19,8 +19,8 @@ body{font-family:Arial;margin:0;background:#f5f5f5}
  top:38px;
  display:none;
  text-align:right;
+ pointer-events:none;
 }
-
 #subWhatsapp button{
  background:#25D366;
  color:white;
@@ -28,6 +28,7 @@ body{font-family:Arial;margin:0;background:#f5f5f5}
  padding:4px 8px;
  border-radius:12px;
  font-size:11px;
+ pointer-events:auto;
 }
 
 button,input,textarea{width:100%;padding:12px;margin-top:8px;font-size:16px}
@@ -46,6 +47,7 @@ button{border:none;border-radius:6px}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999}
 .modal-box{background:#fff;margin:5% auto;padding:15px;width:90%;max-height:80%;overflow:auto}
 .small{font-size:13px;color:#555}
+
 @media print{
  body *{visibility:hidden}
  #printArea,#printArea *{visibility:visible}
@@ -60,13 +62,11 @@ button{border:none;border-radius:6px}
 <div id="lockScreen" class="center">
  <div class="box">
   <h3>Milk Diary – Locked</h3>
-  
   <input id="unlockPwd" placeholder="Enter Password">
   <button class="blue" onclick="unlockApp()">Unlock</button>
 
   <hr style="margin:15px 0">
 
-  <!-- Trial Request WhatsApp -->
   <button style="background:#25D366;color:white;border:none;border-radius:6px;font-size:14px"
    onclick="openTrialWhatsapp()">
    📞 If you want Trial Version Unlock Password – Click Here
@@ -82,7 +82,6 @@ button{border:none;border-radius:6px}
   Milk Diary
   <div class="badge" id="statusBadge"></div>
 
-  <!-- Renewal WhatsApp -->
   <div id="subWhatsapp">
     <div style="font-size:11px;font-weight:bold;">Iniyan Talkies</div>
     <button onclick="openSubWhatsapp()">📞 1 Year Subscription</button>
@@ -168,13 +167,13 @@ async function unlockApp(){
 
   localStorage.MDT_UNLOCKED = pwd;
 
-  // Start trial
+  // Start Trial
   if(!localStorage.TRIAL_START && !localStorage.PAID_START){
      localStorage.TRIAL_START = new Date().toISOString();
      alert("30 Days Trial Activated");
   }
 
-  // Paid password
+  // Paid Subscription
   if(registry[pwd].type=="paid"){
      localStorage.PAID_START = new Date().toISOString();
      localStorage.removeItem("TRIAL_START");
@@ -187,15 +186,11 @@ async function unlockApp(){
 function startApp(){
  lockScreen.style.display="none";
  app.style.display="block";
-
- if(!checkSubscription()){
-   calendar.innerHTML="<h3 style='text-align:center'>Subscription Expired</h3>";
-   return;
- }
+ checkSubscription();
  renderCalendar();
 }
 
-/* SUBSCRIPTION CHECK */
+/* SUBSCRIPTION STATUS */
 function checkSubscription(){
   const badge = statusBadge;
   const subBtn = document.getElementById("subWhatsapp");
@@ -210,11 +205,11 @@ function checkSubscription(){
      if(today <= end){
         badge.innerText="Paid Active till "+end.toLocaleDateString();
         subBtn.style.display="none";
-        return true;
+        return;
      }else{
         badge.innerText="Subscription Expired";
         subBtn.style.display="block";
-        return false;
+        return;
      }
   }
 
@@ -228,34 +223,31 @@ function checkSubscription(){
      if(today <= end){
         badge.innerText="Trial - "+diff+" Days Left";
         subBtn.style.display="none";
-        return true;
+        return;
      }else{
         badge.innerText="Trial Expired";
         subBtn.style.display="block";
-        return false;
+        return;
      }
   }
 
   badge.innerText="Not Activated";
   subBtn.style.display="block";
-  return false;
 }
 
 /* WHATSAPP FUNCTIONS */
 
-// Trial request
 function openTrialWhatsapp(){
- let msg="Hello Iniyan Talkies!\n\nI want Trial Version Unlock Password for Milk Diary App.\n\nMy Device ID: "+DEVICE_ID;
+ let msg="Hello Iniyan Talkies!\n\nI want Trial Version Unlock Password.\n\nMy Device ID: "+DEVICE_ID;
  window.open("https://wa.me/"+ADMIN_WHATSAPP+"?text="+encodeURIComponent(msg));
 }
 
-// Renewal request
 function openSubWhatsapp(){
- let msg="Hello Iniyan Talkies!\n\nI want to renew 1 Year Subscription for Milk Diary App.\n\nMy Device ID: "+DEVICE_ID;
+ let msg="Hello Iniyan Talkies!\n\nI want to renew 1 Year Subscription.\n\nMy Device ID: "+DEVICE_ID;
  window.open("https://wa.me/"+ADMIN_WHATSAPP+"?text="+encodeURIComponent(msg));
 }
 
-/* ===== ORIGINAL CALENDAR & BILL SYSTEM ===== */
+/* CALENDAR DATA */
 
 let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,mode=null,from=null,to=null;
@@ -296,8 +288,23 @@ function selectDate(d,el){
  if(mode==="to"){to=d;toDate.value=fmt(d)}
 }
 
-function saveNot(){if(!selectedDate)return;let k=key(selectedDate);data[k]=data[k]||{};data[k].not=parseInt(notQty.value)||0;localStorage.MILK_DATA=JSON.stringify(data);renderCalendar();}
-function saveExtra(){if(!selectedDate)return;let k=key(selectedDate);data[k]=data[k]||{};data[k].extra=parseInt(extraQty.value)||0;localStorage.MILK_DATA=JSON.stringify(data);renderCalendar();}
+function saveNot(){
+ if(!selectedDate) return;
+ let k=key(selectedDate);
+ data[k]=data[k]||{};
+ data[k].not=parseInt(notQty.value)||0;
+ localStorage.MILK_DATA=JSON.stringify(data);
+ renderCalendar();
+}
+
+function saveExtra(){
+ if(!selectedDate) return;
+ let k=key(selectedDate);
+ data[k]=data[k]||{};
+ data[k].extra=parseInt(extraQty.value)||0;
+ localStorage.MILK_DATA=JSON.stringify(data);
+ renderCalendar();
+}
 
 /* BILL SYSTEM */
 
@@ -323,8 +330,14 @@ function buildBill(s,e){
  for(let k in data){
   let d=new Date(k);
   if(d>=s && d<=e){
-   if(data[k].extra){extra+=data[k].extra;extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";}
-   if(data[k].not){not+=data[k].not;notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
+   if(data[k].extra){
+     extra+=data[k].extra;
+     extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";
+   }
+   if(data[k].not){
+     not+=data[k].not;
+     notLines+=fmt(d)+" : "+data[k].not+" pkt\n";
+   }
   }
  }
 
@@ -385,6 +398,7 @@ Powered by Milk Diary - iniyan.talkies`;
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
+
 </script>
 
 <script>
