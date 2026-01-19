@@ -24,10 +24,11 @@ button{border:none;border-radius:6px}
 
 .month-nav{display:flex;justify-content:space-between;padding:10px;background:#eee}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:10px}
-.day{background:#ddd;padding:12px;border-radius:6px;text-align:center}
+.day{background:#ddd;padding:12px;border-radius:6px;text-align:center;cursor:pointer}
 .day.red{background:#e53935;color:#fff}
 .day.green{background:#43a047;color:#fff}
 .day.blue{background:#1e88e5;color:#fff}
+.day.active{outline:3px solid #000}
 
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999}
 .modal-box{background:#fff;margin:5% auto;padding:15px;width:90%;max-height:85%;overflow:auto}
@@ -92,7 +93,7 @@ button{border:none;border-radius:6px}
  </div>
 </div>
 
-<!-- ADMIN -->
+<!-- ADMIN MODAL -->
 <div id="adminModal" class="modal">
  <div class="modal-box">
   <h3>Admin Settings</h3>
@@ -106,7 +107,7 @@ button{border:none;border-radius:6px}
  </div>
 </div>
 
-<!-- BILL PREVIEW -->
+<!-- BILL MODAL -->
 <div id="billModal" class="modal">
  <div class="modal-box">
   <pre id="billPreview"></pre>
@@ -115,7 +116,7 @@ button{border:none;border-radius:6px}
  </div>
 </div>
 
-<!-- DATE PICKER -->
+<!-- DATE PICKER MODAL -->
 <div id="datePickerModal" class="modal">
  <div class="modal-box">
   <div class="month-nav">
@@ -141,7 +142,7 @@ let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,from=null,to=null;
 let pickerDate=new Date(),pickingMode=null;
 
-/* ---------- Unlock ---------- */
+/* ========== UNLOCK ========== */
 async function unlockApp(){
  let pwd=unlockPwd.value.trim();
  let registry=await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
@@ -164,10 +165,9 @@ function startApp(){
  renderCalendar();
 }
 
-/* ---------- Subscription Badge ---------- */
+/* ========== SUBSCRIPTION BADGE ========== */
 function checkSubscription(){
  const badge=statusBadge;
- const subBtn=subWhatsapp;
  const today=new Date();
 
  if(localStorage.PAID_START){
@@ -185,7 +185,7 @@ function checkSubscription(){
  }
 }
 
-/* ---------- Whatsapp ---------- */
+/* ========== WHATSAPP ========== */
 function openTrialWhatsapp(){
  window.open("https://wa.me/"+ADMIN_WHATSAPP+"?text=Need Trial Password\nDevice:"+DEVICE_ID);
 }
@@ -193,7 +193,7 @@ function openSubWhatsapp(){
  window.open("https://wa.me/"+ADMIN_WHATSAPP+"?text=Need 1 Year Subscription\nDevice:"+DEVICE_ID);
 }
 
-/* ---------- Calendar ---------- */
+/* ========== CALENDAR ========== */
 function key(d){return d.toISOString().slice(0,10);}
 function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
 
@@ -212,7 +212,11 @@ function renderCalendar(){
    else if(data[k].extra) el.classList.add("green");
   }
   el.innerText=i;
-  el.onclick=()=>selectedDate=d;
+  el.onclick=()=>{
+    selectedDate=d;
+    document.querySelectorAll("#calendar .day").forEach(x=>x.classList.remove("active"));
+    el.classList.add("active");
+  };
   calendar.appendChild(el);
  }
 }
@@ -235,7 +239,7 @@ function saveExtra(){
  renderCalendar();
 }
 
-/* ---------- Date Picker ---------- */
+/* ========== DATE PICKER ========== */
 function setMode(m){pickingMode=m;openDatePicker();}
 function openDatePicker(){
  pickerDate=new Date();
@@ -255,19 +259,23 @@ function renderPickerCalendar(){
   let el=document.createElement("div");
   el.className="day";
   el.innerText=i;
-  el.onclick=()=>selectPickerDate(d);
+  el.onclick=(event)=>selectPickerDate(d,event);
   pickerCalendar.appendChild(el);
  }
 }
-function selectPickerDate(d){
- if(pickingMode==="from"){from=d;fromDate.value=fmt(d);}
- if(pickingMode==="to"){to=d;toDate.value=fmt(d);}
- if(pickingMode==="detailFrom"){window.df=d;pickingMode="detailTo";renderPickerCalendar();return;}
+
+function selectPickerDate(d,event){
+ document.querySelectorAll("#pickerCalendar .day").forEach(x=>x.classList.remove("active"));
+ event.target.classList.add("active");
+
+ if(pickingMode==="from"){from=d;fromDate.value=fmt(d);datePickerModal.style.display="none";return;}
+ if(pickingMode==="to"){to=d;toDate.value=fmt(d);datePickerModal.style.display="none";return;}
+
+ if(pickingMode==="detailFrom"){window.df=d;pickingMode="detailTo";return;}
  if(pickingMode==="detailTo"){datePickerModal.style.display="none";viewDetailedReportByDate(window.df,d);return;}
- datePickerModal.style.display="none";
 }
 
-/* ---------- Admin ---------- */
+/* ========== ADMIN ========== */
 function openAdmin(){adminModal.style.display="block";}
 function saveAdmin(){
  localStorage.custPlot=custPlot.value;
@@ -279,7 +287,7 @@ function saveAdmin(){
  adminModal.style.display="none";
 }
 
-/* ---------- Final Bill ---------- */
+/* ========== FINAL BILL ========== */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
@@ -323,12 +331,11 @@ Powered by Milk Diary - iniyan.talkies`;
  billModal.style.display="block";
 }
 
-/* ---------- Detailed Report ---------- */
+/* ========== DETAILED REPORT ========== */
 function openDetailedDatePicker(){
  pickingMode="detailFrom";
  openDatePicker();
 }
-
 function viewDetailedReportByDate(s,e){
  let extraLines="",notLines="";
  let extraTotal=0,notTotal=0;
@@ -362,7 +369,7 @@ Generated by Milk Diary - iniyan.talkies`;
  billModal.style.display="block";
 }
 
-/* ---------- Whatsapp Send ---------- */
+/* ========== SEND TO WHATSAPP ========== */
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
