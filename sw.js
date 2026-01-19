@@ -1,4 +1,4 @@
-const CACHE_NAME = "milkdiary-cache-v21";
+const CACHE_NAME = "milkdiary-cache-v22";
 const urlsToCache = ["./", "./index.html", "./manifest.json", "./192.png", "./512.png"];
 
 self.addEventListener("install", event => {
