@@ -49,6 +49,12 @@ button{border:none;border-radius:6px}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999}
 .modal-box{background:#fff;margin:5% auto;padding:15px;width:90%;max-height:80%;overflow:auto}
 
+/* ===== FIRST-TIME ADMIN LOCK ===== */
+.locked .needs-admin{
+ pointer-events:none;
+ opacity:0.4;
+}
+
 @media print{
  body *{visibility:hidden}
  #printArea,#printArea *{visibility:visible}
@@ -98,7 +104,8 @@ button{border:none;border-radius:6px}
 
  <div class="calendar" id="calendar"></div>
 
- <div style="padding:15px">
+ <!-- MAIN CONTROLS -->
+ <div style="padding:15px" class="needs-admin">
   <button class="blue" onclick="openAdmin()">Admin Settings</button>
 
   <input id="notQty" placeholder="Not Supplied Qty">
@@ -177,7 +184,6 @@ async function unlockApp(){
  if(!pwd) return alert("Enter password");
 
  let registry=await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
-
  if(!registry[pwd]) return alert("Invalid Password");
 
  if(registry[pwd].used && registry[pwd].device!==DEVICE_ID){
@@ -200,10 +206,18 @@ async function unlockApp(){
  startApp();
 }
 
-/* ===== START APP (FIXED) ===== */
+/* ===== START APP ===== */
 function startApp(){
  document.getElementById("lockScreen").remove();
- document.getElementById("app").style.display="block";
+ let appDiv=document.getElementById("app");
+ appDiv.style.display="block";
+
+ // First-time-only lock
+ if(!localStorage.custPlot){
+   appDiv.classList.add("locked");
+   alert("Please fill Admin Settings first");
+ }
+
  checkSubscription();
  renderCalendar();
 }
@@ -217,28 +231,19 @@ function checkSubscription(){
  if(localStorage.PAID_START){
    let s=new Date(localStorage.PAID_START);
    let e=new Date(s); e.setFullYear(e.getFullYear()+1);
-   if(today<=e){
-     badge.innerText="Paid Active till "+e.toLocaleDateString();
-     subBtn.style.display="none"; return;
-   }
-   badge.innerText="Subscription Expired";
-   subBtn.style.display="block"; return;
+   if(today<=e){badge.innerText="Paid Active till "+e.toLocaleDateString();subBtn.style.display="none";return;}
+   badge.innerText="Subscription Expired";subBtn.style.display="block";return;
  }
 
  if(localStorage.TRIAL_START){
    let s=new Date(localStorage.TRIAL_START);
    let e=new Date(s); e.setDate(e.getDate()+30);
    let diff=Math.ceil((e-today)/(1000*60*60*24));
-   if(today<=e){
-     badge.innerText="Trial - "+diff+" Days Left";
-     subBtn.style.display="none"; return;
-   }
-   badge.innerText="Trial Expired";
-   subBtn.style.display="block"; return;
+   if(today<=e){badge.innerText="Trial - "+diff+" Days Left";subBtn.style.display="none";return;}
+   badge.innerText="Trial Expired";subBtn.style.display="block";return;
  }
 
- badge.innerText="Not Activated";
- subBtn.style.display="block";
+ badge.innerText="Not Activated";subBtn.style.display="block";
 }
 
 /* ===== WHATSAPP ===== */
@@ -254,7 +259,6 @@ function openSubWhatsapp(){
 /* ===== MAIN CALENDAR ===== */
 let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,from=null,to=null;
-
 function key(d){return d.toISOString().slice(0,10);}
 function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
 
@@ -289,34 +293,22 @@ function selectDate(d,el){
 }
 function saveNot(){
  if(!selectedDate)return;
- let k=key(selectedDate); data[k]=data[k]||{};
+ let k=key(selectedDate);data[k]=data[k]||{};
  data[k].not=parseInt(notQty.value)||0;
- localStorage.MILK_DATA=JSON.stringify(data); renderCalendar();
+ localStorage.MILK_DATA=JSON.stringify(data);renderCalendar();
 }
 function saveExtra(){
  if(!selectedDate)return;
- let k=key(selectedDate); data[k]=data[k]||{};
+ let k=key(selectedDate);data[k]=data[k]||{};
  data[k].extra=parseInt(extraQty.value)||0;
- localStorage.MILK_DATA=JSON.stringify(data); renderCalendar();
+ localStorage.MILK_DATA=JSON.stringify(data);renderCalendar();
 }
 
 /* ===== DATE PICKER ===== */
-let pickerDate=new Date();
-let pickingMode=null;
-
-function setMode(mode){
- pickingMode=mode;
- openDatePicker();
-}
-function openDatePicker(){
- pickerDate=new Date();
- renderPickerCalendar();
- datePickerModal.style.display="block";
-}
-function changePickerMonth(v){
- pickerDate.setMonth(pickerDate.getMonth()+v);
- renderPickerCalendar();
-}
+let pickerDate=new Date();let pickingMode=null;
+function setMode(mode){pickingMode=mode;openDatePicker();}
+function openDatePicker(){pickerDate=new Date();renderPickerCalendar();datePickerModal.style.display="block";}
+function changePickerMonth(v){pickerDate.setMonth(pickerDate.getMonth()+v);renderPickerCalendar();}
 function renderPickerCalendar(){
  pickerMonthTitle.innerText=pickerDate.toLocaleString("default",{month:"long",year:"numeric"});
  pickerCalendar.innerHTML="";
@@ -324,8 +316,7 @@ function renderPickerCalendar(){
  for(let i=1;i<=days;i++){
   let d=new Date(pickerDate.getFullYear(),pickerDate.getMonth(),i);
   let el=document.createElement("div");
-  el.className="day";
-  el.innerText=i;
+  el.className="day";el.innerText=i;
   el.onclick=()=>selectPickerDate(d);
   pickerCalendar.appendChild(el);
  }
@@ -354,6 +345,7 @@ function saveAdmin(){
  localStorage.service=serviceInput.value;
  localStorage.milkman=milkmanInput.value;
  adminModal.style.display="none";
+ document.getElementById("app").classList.remove("locked");
 }
 
 /* ===== BILL ===== */
@@ -373,7 +365,6 @@ function buildBill(s,e){
  let days=Math.floor((e-s)/86400000)+1;
  let base=daily*days;
  let extra=0,not=0,extraLines="",notLines="";
-
  for(let k in data){
   let d=new Date(k);
   if(d>=s && d<=e){
@@ -381,11 +372,9 @@ function buildBill(s,e){
    if(data[k].not){not+=data[k].not;notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
   }
  }
-
  let finalMilk=base+extra-not;
  let milkAmt=finalMilk*rate;
  let total=milkAmt+service;
-
  billPreview.innerText=
 `MILK DIARY BILL
 
@@ -435,7 +424,6 @@ Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
-
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
