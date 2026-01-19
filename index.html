@@ -344,12 +344,23 @@ Not Supplied : ${not} pkt
 Final Milk :
 ${base} + ${extra} - ${not} = ${finalMilk} pkt
 
-Milk Amount : ₹${milkAmt}
-Service Charge : ₹${service}
+Milk Rate:
+₹${rate} per pkt
 
-GRAND TOTAL : ₹${total}
+Milk Amount:
+${finalMilk} × ₹${rate} = ₹${milkAmt}
 
-Powered by Milk Diary - iniyan.talkies`;
+Service Charge:
+₹${service}
+
+--------------------------------
+
+GRAND TOTAL:
+₹${total}
+
+--------------------------------
+Powered by Milk Diary - iniyan.talkies
+
 
  billModal.style.display="block";
 }
