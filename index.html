@@ -407,11 +407,13 @@ Period : ${fmt(s)} to ${fmt(e)}
 Daily Milk : ${daily} pkt × ${days} days = ${base} pkt
 Extra Milk : ${extra} pkt
 Not Supplied : ${not} pkt
---------------------------------
+---------------------------------
 
-Final Milk : ${finalMilk} pkt
+Final Milk :
+${base} + ${extra} - ${not} = ${finalMilk} pkt
+
 Milk Rate : ₹${rate}
-Milk Amount : ₹${milkAmt}
+Milk Amount : ₹${finalMilk} × ₹${rate} = ₹${milkAmt}
 Service Charge : ₹${service}
 
 --------------------------------
