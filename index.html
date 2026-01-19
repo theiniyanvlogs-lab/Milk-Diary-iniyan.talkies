@@ -136,7 +136,7 @@ let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,from=null,to=null;
 let pickerDate=new Date(),pickingMode=null;
 
-/* ---------- DATE KEY FIX (LOCAL DATE) ---------- */
+/* ---------- LOCAL DATE KEY (FIXED) ---------- */
 function key(d){
  return d.getFullYear()+"-"+
         ("0"+(d.getMonth()+1)).slice(-2)+"-"+
@@ -216,12 +216,11 @@ function renderCalendar(){
 
   el.innerText=i;
 
-  /* ---- CLICK DATE (RELOAD SAVED VALUES FIX) ---- */
+  /* Reload saved values on re-click */
   el.onclick=()=>{
     selectedDate=d;
     document.querySelectorAll("#calendar .day").forEach(x=>x.classList.remove("active"));
     el.classList.add("active");
-
     let kk=key(d);
     notQty.value = (data[kk] && data[kk].not) ? data[kk].not : "";
     extraQty.value = (data[kk] && data[kk].extra) ? data[kk].extra : "";
@@ -232,7 +231,7 @@ function renderCalendar(){
 }
 function changeMonth(v){current.setMonth(current.getMonth()+v);renderCalendar();}
 
-/* ---------- SAVE FUNCTIONS ---------- */
+/* ---------- SAVE ---------- */
 function saveNot(){
  if(!selectedDate)return;
  let k=key(selectedDate);
@@ -296,14 +295,14 @@ function saveAdmin(){
  adminModal.style.display="none";
 }
 
-/* ---------- BILL ---------- */
+/* ---------- FINAL BILL ---------- */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
  buildBill(s,e);
 }
 function viewPeriodBill(){
- if(!from||!to) return alert("Select dates");
+ if(!from||!to)return alert("Select dates");
  buildBill(from,to);
 }
 
@@ -313,51 +312,75 @@ function buildBill(s,e){
  let service=+localStorage.service||0;
  let days=Math.floor((e-s)/86400000)+1;
  let base=daily*days,extra=0,not=0;
- let extraLines="",notLines="";
+ let extraLinesMonthly="",notLinesMonthly="";
 
  for(let k in data){
-  let d=new Date(k+"T00:00:00");   /* ---- DATE SHIFT FIX ---- */
+  let d=new Date(k+"T00:00:00");  /* Date shift fixed */
   if(d>=s && d<=e){
-    if(data[k].extra){extra+=data[k].extra; extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";}
-    if(data[k].not){not+=data[k].not; notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
+    if(data[k].extra){
+      extra+=data[k].extra;
+      extraLinesMonthly+=fmt(d)+" : "+data[k].extra+" pkt\n";
+    }
+    if(data[k].not){
+      not+=data[k].not;
+      notLinesMonthly+=fmt(d)+" : "+data[k].not+" pkt\n";
+    }
   }
  }
-
- if(extraLines==="") extraLines="Nil\n";
- if(notLines==="") notLines="Nil\n";
 
  let finalMilk=base+extra-not;
  let milkAmt=finalMilk*rate;
  let total=milkAmt+service;
 
+ if(extraLinesMonthly==="") extraLinesMonthly="Nil\n";
+ if(notLinesMonthly==="") notLinesMonthly="Nil\n";
+
  billPreview.innerText=
 `MILK DIARY BILL
 
-Door No:
-${localStorage.custPlot||""}
+Plot / Door No:
+${localStorage.custPlot || ""}
 
 Address:
-${localStorage.custAddr||""}
+${localStorage.custAddr || ""}
 
 Period:
 ${fmt(s)} to ${fmt(e)}
 
 --------------------------------
-Daily Milk: ${daily} pkt × ${days} days = ${base} pkt
+
+Daily Milk:
+${daily} pkt × ${days} days = ${base} pkt
 
 Extra Milk:
-${extraLines}Total Extra: ${extra} pkt
+${extraLinesMonthly}
+Total Extra: ${extra} pkt
 
 Not Supplied:
-${notLines}Total Not Supplied: ${not} pkt
+${notLinesMonthly}
+Total Not Supplied: ${not} pkt
 
 --------------------------------
-Final Milk: ${finalMilk} pkt
-Milk Amount: ₹${milkAmt}
-Service Charge: ₹${service}
 
-GRAND TOTAL: ₹${total}
---------------------------------`;
+Final Milk:
+${base} + ${extra} - ${not} = ${finalMilk} pkt
+
+Milk Rate:
+₹${rate} per pkt
+
+Milk Amount:
+${finalMilk} × ₹${rate} = ₹${milkAmt}
+
+Service Charge:
+₹${service}
+
+--------------------------------
+
+GRAND TOTAL:
+₹${total}
+
+--------------------------------
+Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
@@ -370,10 +393,16 @@ function viewDetailedReportByDate(s,e){
  let extraTotal=0,notTotal=0;
 
  for(let k in data){
-  let d=new Date(k+"T00:00:00");   /* ---- DATE SHIFT FIX ---- */
+  let d=new Date(k+"T00:00:00"); /* Date shift fixed */
   if(d>=s && d<=e){
-   if(data[k].extra){extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n"; extraTotal+=data[k].extra;}
-   if(data[k].not){notLines+=fmt(d)+" : "+data[k].not+" pkt\n"; notTotal+=data[k].not;}
+   if(data[k].extra){
+     extraLines += fmt(d)+" : "+data[k].extra+" pkt\n";
+     extraTotal += data[k].extra;
+   }
+   if(data[k].not){
+     notLines += fmt(d)+" : "+data[k].not+" pkt\n";
+     notTotal += data[k].not;
+   }
   }
  }
 
@@ -381,22 +410,29 @@ function viewDetailedReportByDate(s,e){
  if(notLines==="") notLines="Nil\n";
 
  billPreview.innerText=
-`EXTRA & NOT SUPPLIED REPORT
+`EXTRA SUPPLIED & NOT SUPPLIED MILK REPORT
 
-Period: ${fmt(s)} to ${fmt(e)}
+Door No : ${localStorage.custPlot||""}
+Address : ${localStorage.custAddr||""}
 
-EXTRA SUPPLIED:
+Period : ${fmt(s)} to ${fmt(e)}
+
+--------------------------------
+EXTRA SUPPLIED
 ${extraLines}
-Total Extra: ${extraTotal} pkt
+Total Extra : ${extraTotal} pkt
 
-NOT SUPPLIED:
+NOT SUPPLIED
 ${notLines}
-Total Not Supplied: ${notTotal} pkt`;
+Total Not Supplied : ${notTotal} pkt
+
+--------------------------------
+Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
 
-/* ---------- WHATSAPP ---------- */
+/* ---------- SEND TO WHATSAPP ---------- */
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
