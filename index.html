@@ -136,7 +136,19 @@ let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,from=null,to=null;
 let pickerDate=new Date(),pickingMode=null;
 
-/* ========== UNLOCK ========== */
+/* ---------- DATE KEY FIX (LOCAL DATE) ---------- */
+function key(d){
+ return d.getFullYear()+"-"+
+        ("0"+(d.getMonth()+1)).slice(-2)+"-"+
+        ("0"+d.getDate()).slice(-2);
+}
+function fmt(d){
+ return ("0"+d.getDate()).slice(-2)+"/"+
+        ("0"+(d.getMonth()+1)).slice(-2)+"/"+
+        d.getFullYear();
+}
+
+/* ---------- UNLOCK ---------- */
 async function unlockApp(){
  let pwd=unlockPwd.value.trim();
  let registry=await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
@@ -153,13 +165,13 @@ async function unlockApp(){
 }
 
 function startApp(){
- document.getElementById("lockScreen").style.display="none";
- document.getElementById("app").style.display="block";
+ lockScreen.style.display="none";
+ app.style.display="block";
  checkSubscription();
  renderCalendar();
 }
 
-/* ========== SUBSCRIPTION BADGE ========== */
+/* ---------- SUBSCRIPTION BADGE ---------- */
 function checkSubscription(){
  const badge=statusBadge;
  const today=new Date();
@@ -177,7 +189,6 @@ function checkSubscription(){
  }
 }
 
-/* WhatsApp request */
 function openTrialWhatsapp(){
  window.open("https://wa.me/"+ADMIN_PHONE+"?text=Need Trial Unlock Password");
 }
@@ -185,37 +196,43 @@ function openSubWhatsapp(){
  window.open("https://wa.me/"+ADMIN_PHONE+"?text=Need 1 Year Subscription Password");
 }
 
-/* ========== CALENDAR ========== */
-function key(d){return d.toISOString().slice(0,10);}
-function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
-
+/* ---------- CALENDAR ---------- */
 function renderCalendar(){
  monthTitle.innerText=current.toLocaleString("default",{month:"long",year:"numeric"});
  calendar.innerHTML="";
  let days=new Date(current.getFullYear(),current.getMonth()+1,0).getDate();
+
  for(let i=1;i<=days;i++){
   let d=new Date(current.getFullYear(),current.getMonth(),i);
   let el=document.createElement("div");
   el.className="day";
   let k=key(d);
+
   if(data[k]){
    if(data[k].not && data[k].extra) el.classList.add("blue");
    else if(data[k].not) el.classList.add("red");
    else if(data[k].extra) el.classList.add("green");
   }
+
   el.innerText=i;
+
+  /* ---- CLICK DATE (RELOAD SAVED VALUES FIX) ---- */
   el.onclick=()=>{
     selectedDate=d;
     document.querySelectorAll("#calendar .day").forEach(x=>x.classList.remove("active"));
     el.classList.add("active");
-    notQty.value="";
-    extraQty.value="";
+
+    let kk=key(d);
+    notQty.value = (data[kk] && data[kk].not) ? data[kk].not : "";
+    extraQty.value = (data[kk] && data[kk].extra) ? data[kk].extra : "";
   };
+
   calendar.appendChild(el);
  }
 }
 function changeMonth(v){current.setMonth(current.getMonth()+v);renderCalendar();}
 
+/* ---------- SAVE FUNCTIONS ---------- */
 function saveNot(){
  if(!selectedDate)return;
  let k=key(selectedDate);
@@ -233,7 +250,7 @@ function saveExtra(){
  renderCalendar();
 }
 
-/* ========== DATE PICKER ========== */
+/* ---------- DATE PICKER ---------- */
 function setMode(m){pickingMode=m;openDatePicker();}
 function openDatePicker(){
  pickerDate=new Date();
@@ -267,7 +284,7 @@ function selectPickerDate(d,event){
  if(pickingMode==="detailTo"){datePickerModal.style.display="none";viewDetailedReportByDate(window.df,d);return;}
 }
 
-/* ========== ADMIN ========== */
+/* ---------- ADMIN ---------- */
 function openAdmin(){adminModal.style.display="block";}
 function saveAdmin(){
  localStorage.custPlot=custPlot.value;
@@ -279,13 +296,16 @@ function saveAdmin(){
  adminModal.style.display="none";
 }
 
-/* ========== FINAL BILL ========== */
+/* ---------- BILL ---------- */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
  buildBill(s,e);
 }
-function viewPeriodBill(){if(!from||!to)return alert("Select dates");buildBill(from,to);}
+function viewPeriodBill(){
+ if(!from||!to) return alert("Select dates");
+ buildBill(from,to);
+}
 
 function buildBill(s,e){
  let daily=+localStorage.dailyQty||0;
@@ -293,80 +313,56 @@ function buildBill(s,e){
  let service=+localStorage.service||0;
  let days=Math.floor((e-s)/86400000)+1;
  let base=daily*days,extra=0,not=0;
- let extraLinesMonthly="",notLinesMonthly="";
+ let extraLines="",notLines="";
 
  for(let k in data){
-  let d = new Date(k+"T00:00:00");   // ✅ FIXED HERE
+  let d=new Date(k+"T00:00:00");   /* ---- DATE SHIFT FIX ---- */
   if(d>=s && d<=e){
-    if(data[k].extra){
-      extra+=data[k].extra;
-      extraLinesMonthly+=fmt(d)+" : "+data[k].extra+" pkt\n";
-    }
-    if(data[k].not){
-      not+=data[k].not;
-      notLinesMonthly+=fmt(d)+" : "+data[k].not+" pkt\n";
-    }
+    if(data[k].extra){extra+=data[k].extra; extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";}
+    if(data[k].not){not+=data[k].not; notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
   }
  }
+
+ if(extraLines==="") extraLines="Nil\n";
+ if(notLines==="") notLines="Nil\n";
 
  let finalMilk=base+extra-not;
  let milkAmt=finalMilk*rate;
  let total=milkAmt+service;
 
- if(extraLinesMonthly==="") extraLinesMonthly="Nil\n";
- if(notLinesMonthly==="") notLinesMonthly="Nil\n";
-
  billPreview.innerText=
 `MILK DIARY BILL
 
-Plot / Door No:
-${localStorage.custPlot || ""}
+Door No:
+${localStorage.custPlot||""}
 
 Address:
-${localStorage.custAddr || ""}
+${localStorage.custAddr||""}
 
 Period:
 ${fmt(s)} to ${fmt(e)}
 
 --------------------------------
-
-Daily Milk:
-${daily} pkt × ${days} days = ${base} pkt
+Daily Milk: ${daily} pkt × ${days} days = ${base} pkt
 
 Extra Milk:
-${extraLinesMonthly}
-Total Extra: ${extra} pkt
+${extraLines}Total Extra: ${extra} pkt
 
 Not Supplied:
-${notLinesMonthly}
-Total Not Supplied: ${not} pkt
+${notLines}Total Not Supplied: ${not} pkt
 
 --------------------------------
+Final Milk: ${finalMilk} pkt
+Milk Amount: ₹${milkAmt}
+Service Charge: ₹${service}
 
-Final Milk:
-${base} + ${extra} - ${not} = ${finalMilk} pkt
-
-Milk Rate:
-₹${rate} per pkt
-
-Milk Amount:
-${finalMilk} × ₹${rate} = ₹${milkAmt}
-
-Service Charge:
-₹${service}
-
---------------------------------
-
-GRAND TOTAL:
-₹${total}
-
---------------------------------
-Powered by Milk Diary - iniyan.talkies`;
+GRAND TOTAL: ₹${total}
+--------------------------------`;
 
  billModal.style.display="block";
 }
 
-/* ========== DETAILED REPORT ========== */
+/* ---------- DETAILED REPORT ---------- */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
 
 function viewDetailedReportByDate(s,e){
@@ -374,16 +370,10 @@ function viewDetailedReportByDate(s,e){
  let extraTotal=0,notTotal=0;
 
  for(let k in data){
-  let d = new Date(k+"T00:00:00");   // ✅ FIXED HERE
+  let d=new Date(k+"T00:00:00");   /* ---- DATE SHIFT FIX ---- */
   if(d>=s && d<=e){
-   if(data[k].extra){
-     extraLines += fmt(d)+" : "+data[k].extra+" pkt\n";
-     extraTotal += data[k].extra;
-   }
-   if(data[k].not){
-     notLines += fmt(d)+" : "+data[k].not+" pkt\n";
-     notTotal += data[k].not;
-   }
+   if(data[k].extra){extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n"; extraTotal+=data[k].extra;}
+   if(data[k].not){notLines+=fmt(d)+" : "+data[k].not+" pkt\n"; notTotal+=data[k].not;}
   }
  }
 
@@ -391,29 +381,22 @@ function viewDetailedReportByDate(s,e){
  if(notLines==="") notLines="Nil\n";
 
  billPreview.innerText=
-`EXTRA SUPPLIED & NOT SUPPLIED MILK REPORT
+`EXTRA & NOT SUPPLIED REPORT
 
-Door No : ${localStorage.custPlot||""}
-Address : ${localStorage.custAddr||""}
+Period: ${fmt(s)} to ${fmt(e)}
 
-Period : ${fmt(s)} to ${fmt(e)}
-
---------------------------------
-EXTRA SUPPLIED
+EXTRA SUPPLIED:
 ${extraLines}
-Total Extra : ${extraTotal} pkt
+Total Extra: ${extraTotal} pkt
 
-NOT SUPPLIED
+NOT SUPPLIED:
 ${notLines}
-Total Not Supplied : ${notTotal} pkt
-
---------------------------------
-Powered by Milk Diary - iniyan.talkies`;
+Total Not Supplied: ${notTotal} pkt`;
 
  billModal.style.display="block";
 }
 
-/* ========== SEND TO WHATSAPP ========== */
+/* ---------- WHATSAPP ---------- */
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
