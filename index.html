@@ -136,7 +136,7 @@ let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,from=null,to=null;
 let pickerDate=new Date(),pickingMode=null;
 
-/* Unlock */
+/* ========== UNLOCK ========== */
 async function unlockApp(){
  let pwd=unlockPwd.value.trim();
  let registry=await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
@@ -159,7 +159,7 @@ function startApp(){
  renderCalendar();
 }
 
-/* Subscription badge */
+/* ========== SUBSCRIPTION BADGE ========== */
 function checkSubscription(){
  const badge=statusBadge;
  const today=new Date();
@@ -177,7 +177,7 @@ function checkSubscription(){
  }
 }
 
-/* WhatsApp request buttons */
+/* WhatsApp request */
 function openTrialWhatsapp(){
  window.open("https://wa.me/"+ADMIN_PHONE+"?text=Need Trial Unlock Password");
 }
@@ -185,7 +185,7 @@ function openSubWhatsapp(){
  window.open("https://wa.me/"+ADMIN_PHONE+"?text=Need 1 Year Subscription Password");
 }
 
-/* Calendar */
+/* ========== CALENDAR ========== */
 function key(d){return d.toISOString().slice(0,10);}
 function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
 
@@ -233,7 +233,7 @@ function saveExtra(){
  renderCalendar();
 }
 
-/* Date Picker */
+/* ========== DATE PICKER ========== */
 function setMode(m){pickingMode=m;openDatePicker();}
 function openDatePicker(){
  pickerDate=new Date();
@@ -267,7 +267,7 @@ function selectPickerDate(d,event){
  if(pickingMode==="detailTo"){datePickerModal.style.display="none";viewDetailedReportByDate(window.df,d);return;}
 }
 
-/* Admin */
+/* ========== ADMIN ========== */
 function openAdmin(){adminModal.style.display="block";}
 function saveAdmin(){
  localStorage.custPlot=custPlot.value;
@@ -279,7 +279,7 @@ function saveAdmin(){
  adminModal.style.display="none";
 }
 
-/* Final Bill */
+/* ========== FINAL BILL WITH FULL FORMAT ========== */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
@@ -293,24 +293,55 @@ function buildBill(s,e){
  let service=+localStorage.service||0;
  let days=Math.floor((e-s)/86400000)+1;
  let base=daily*days,extra=0,not=0;
+ let extraLinesMonthly="",notLinesMonthly="";
+
  for(let k in data){
   let d=new Date(k);
-  if(d>=s&&d<=e){
-    extra+=data[k].extra||0;
-    not+=data[k].not||0;
+  if(d>=s && d<=e){
+    if(data[k].extra){
+      extra+=data[k].extra;
+      extraLinesMonthly+=fmt(d)+" : "+data[k].extra+" pkt\n";
+    }
+    if(data[k].not){
+      not+=data[k].not;
+      notLinesMonthly+=fmt(d)+" : "+data[k].not+" pkt\n";
+    }
   }
  }
+
  let finalMilk=base+extra-not;
  let milkAmt=finalMilk*rate;
  let total=milkAmt+service;
 
+ if(extraLinesMonthly==="") extraLinesMonthly="Nil\n";
+ if(notLinesMonthly==="") notLinesMonthly="Nil\n";
+
  billPreview.innerText=
 `MILK DIARY BILL
 
-Door No : ${localStorage.custPlot||""}
-Address : ${localStorage.custAddr||""}
+Plot / Door No:
+${localStorage.custPlot || ""}
 
-Period : ${fmt(s)} to ${fmt(e)}
+Address:
+${localStorage.custAddr || ""}
+
+Period:
+${fmt(s)} to ${fmt(e)}
+
+--------------------------------
+
+Daily Milk:
+${daily} pkt × ${days} days = ${base} pkt
+
+Extra Milk:
+${extraLinesMonthly}
+Total Extra: ${extra} pkt
+
+Not Supplied:
+${notLinesMonthly}
+Total Not Supplied: ${not} pkt
+
+--------------------------------
 
 Final Milk:
 ${base} + ${extra} - ${not} = ${finalMilk} pkt
@@ -325,15 +356,17 @@ Service Charge:
 ₹${service}
 
 --------------------------------
+
 GRAND TOTAL:
 ₹${total}
+
 --------------------------------
 Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
 
-/* Detailed Report WITH DATES */
+/* ========== DETAILED EXTRA / NOT SUPPLIED REPORT ========== */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
 
 function viewDetailedReportByDate(s,e){
@@ -380,7 +413,7 @@ Powered by Milk Diary - iniyan.talkies`;
  billModal.style.display="block";
 }
 
-/* WhatsApp Send */
+/* ========== SEND TO WHATSAPP ========== */
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
