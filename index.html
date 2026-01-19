@@ -279,7 +279,7 @@ function saveAdmin(){
  adminModal.style.display="none";
 }
 
-/* ========== FINAL BILL WITH FULL FORMAT ========== */
+/* ========== FINAL BILL ========== */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
@@ -296,7 +296,7 @@ function buildBill(s,e){
  let extraLinesMonthly="",notLinesMonthly="";
 
  for(let k in data){
-  let d=new Date(k);
+  let d = new Date(k+"T00:00:00");   // ✅ FIXED HERE
   if(d>=s && d<=e){
     if(data[k].extra){
       extra+=data[k].extra;
@@ -366,7 +366,7 @@ Powered by Milk Diary - iniyan.talkies`;
  billModal.style.display="block";
 }
 
-/* ========== DETAILED EXTRA / NOT SUPPLIED REPORT ========== */
+/* ========== DETAILED REPORT ========== */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
 
 function viewDetailedReportByDate(s,e){
@@ -374,7 +374,7 @@ function viewDetailedReportByDate(s,e){
  let extraTotal=0,notTotal=0;
 
  for(let k in data){
-  let d=new Date(k);
+  let d = new Date(k+"T00:00:00");   // ✅ FIXED HERE
   if(d>=s && d<=e){
    if(data[k].extra){
      extraLines += fmt(d)+" : "+data[k].extra+" pkt\n";
