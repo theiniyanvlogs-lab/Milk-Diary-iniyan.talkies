@@ -129,7 +129,6 @@ button{border:none;border-radius:6px}
 </div>
 
 <script>
-const REGISTRY_URL="registry.json";
 const ADMIN_PHONE="917200893968";
 
 let data=JSON.parse(localStorage.MILK_DATA||"{}");
@@ -147,44 +146,35 @@ function getDeviceId(){
 }
 
 /* DATE FORMAT */
-function key(d){
- return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
-}
-function fmt(d){
- return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();
-}
+function key(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
+function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
 
-/* TRIAL WHATSAPP WITH DEVICE ID */
+/* WHATSAPP */
 function openTrialWhatsapp(){
  let myDevice=getDeviceId();
- let msg=`Hello,
-I need Trial Unlock Password.
-
-My Device ID:
-${myDevice}`;
+ let msg=`Hello,\nI need Trial Unlock Password.\n\nMy Device ID:\n${myDevice}`;
  window.open("https://wa.me/"+ADMIN_PHONE+"?text="+encodeURIComponent(msg));
 }
-
 function openSubWhatsapp(){
  window.open("https://wa.me/"+ADMIN_PHONE+"?text=Need 1 Year Subscription Password");
 }
 
-/* UNLOCK */
+/* 🔐 SECURE UNLOCK USING VERCEL API */
 async function unlockApp(){
- let pwd=unlockPwd.value.trim();
- let registry=await fetch(REGISTRY_URL+"?t="+Date.now()).then(r=>r.json());
+ let pwd = unlockPwd.value.trim();
+ let myDevice = getDeviceId();
 
- if(!registry[pwd]) return alert("Invalid Password");
+ let res = await fetch("/api/checkPassword?pwd=" + pwd);
+ let result = await res.json();
 
- let record=registry[pwd];
- let myDevice=getDeviceId();
+ if(!result.valid) return alert("Invalid Password");
 
- if(record.used===true && record.device!==myDevice){
-   alert("This password is already used on another phone!");
+ if(result.used === true && result.device !== myDevice){
+   alert("This password already used on another phone!");
    return;
  }
 
- if(record.type==="paid"){
+ if(result.type === "paid"){
    localStorage.PAID_START=new Date().toISOString();
    localStorage.removeItem("TRIAL_START");
  }else{
@@ -272,15 +262,8 @@ function saveExtra(){
 
 /* DATE PICKER */
 function setMode(m){pickingMode=m;openDatePicker();}
-function openDatePicker(){
- pickerDate=new Date();
- renderPickerCalendar();
- datePickerModal.style.display="block";
-}
-function changePickerMonth(v){
- pickerDate.setMonth(pickerDate.getMonth()+v);
- renderPickerCalendar();
-}
+function openDatePicker(){pickerDate=new Date();renderPickerCalendar();datePickerModal.style.display="block";}
+function changePickerMonth(v){pickerDate.setMonth(pickerDate.getMonth()+v);renderPickerCalendar();}
 function renderPickerCalendar(){
  pickerMonthTitle.innerText=pickerDate.toLocaleString("default",{month:"long",year:"numeric"});
  pickerCalendar.innerHTML="";
@@ -330,42 +313,36 @@ function viewPeriodBill(){
 }
 
 function buildBill(s,e){
- let daily = +localStorage.dailyQty || 0;
- let rate  = +localStorage.rate || 0;
- let service = +localStorage.service || 0;
- let days = Math.floor((e-s)/86400000)+1;
- let base = daily*days, extra=0, not=0;
- let extraLines="", notLines="";
+ let daily=+localStorage.dailyQty||0;
+ let rate=+localStorage.rate||0;
+ let service=+localStorage.service||0;
+ let days=Math.floor((e-s)/86400000)+1;
+ let base=daily*days,extra=0,not=0;
+ let extraLines="",notLines="";
 
  for(let k in data){
   let d=new Date(k+"T00:00:00");
   if(d>=s && d<=e){
-    if(data[k].extra){
-      extra += data[k].extra;
-      extraLines += fmt(d)+" : "+data[k].extra+" pkt\n";
-    }
-    if(data[k].not){
-      not += data[k].not;
-      notLines += fmt(d)+" : "+data[k].not+" pkt\n";
-    }
+    if(data[k].extra){extra+=data[k].extra;extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";}
+    if(data[k].not){not+=data[k].not;notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
   }
  }
 
  if(extraLines==="") extraLines="Nil\n";
  if(notLines==="") notLines="Nil\n";
 
- let finalMilk = base + extra - not;
- let milkAmt = finalMilk * rate;
- let total = milkAmt + service;
+ let finalMilk=base+extra-not;
+ let milkAmt=finalMilk*rate;
+ let total=milkAmt+service;
 
- billPreview.innerText =
+ billPreview.innerText=
 `MILK DIARY BILL
 
 Plot / Door No:
-${localStorage.custPlot || ""}
+${localStorage.custPlot||""}
 
 Address:
-${localStorage.custAddr || ""}
+${localStorage.custAddr||""}
 
 Period:
 ${fmt(s)} to ${fmt(e)}
@@ -410,10 +387,8 @@ Powered by Milk Diary - iniyan.talkies`;
 
 /* DETAILED REPORT */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
-
 function viewDetailedReportByDate(s,e){
- let extraLines="",notLines="";
- let extraTotal=0,notTotal=0;
+ let extraLines="",notLines="",extraTotal=0,notTotal=0;
 
  for(let k in data){
   let d=new Date(k+"T00:00:00");
@@ -451,6 +426,5 @@ function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
 </script>
-
 </body>
 </html>
