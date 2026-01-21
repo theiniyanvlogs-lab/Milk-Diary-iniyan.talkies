@@ -200,9 +200,11 @@ async function unlockApp(){
 function startApp(){
  lockScreen.style.display="none";
  app.style.display="block";
+ loadAdmin();          // ← ADD THIS
  checkSubscription();
  renderCalendar();
 }
+
 
 /* SUBSCRIPTION BADGE */
 function checkSubscription(){
