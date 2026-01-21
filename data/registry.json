@@ -1,6 +1,6 @@
 {
-  "MDP-482913": { "used": true, "device": "DEV-eyyfiesq8un" },
-  "MDP-739204": { "used": true, "device": "DEV-9rw4dc24s24" },
+  "MDP-482913": { "used": true, "device": "" },
+  "MDP-739204": { "used": false, "device": "" },
   "MDP-105938": { "used": false, "device": "" },
   "MDP-667291": { "used": false, "device": "" },
   "MDP-294857": { "used": false, "device": "" },
