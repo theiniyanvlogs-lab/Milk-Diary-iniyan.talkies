@@ -301,7 +301,24 @@ function loadAdmin(){
  serviceInput.value=localStorage.service||"";
  milkmanInput.value=localStorage.milkman||"";
 }
+/* MONTH BILL */
+function viewMonthBill(){
+ let s = new Date(current.getFullYear(), current.getMonth(), 1);
+ let e = new Date(current.getFullYear(), current.getMonth()+1, 0);
+ buildBill(s,e);
+}
 
+/* PERIOD BILL */
+function viewPeriodBill(){
+ if(!from || !to){
+   alert("Select From and To dates");
+   return;
+ }
+ buildBill(from,to);
+}
+
+
+ 
 /* BUILD BILL (SORTED DATES) */
 function buildBill(s,e){
  let daily=+localStorage.dailyQty||0;
