@@ -136,6 +136,8 @@ let data=JSON.parse(localStorage.MILK_DATA||"{}");
 let current=new Date(),selectedDate=null,from=null,to=null;
 let pickerDate=new Date(),pickingMode=null;
 
+ 
+
 /* DEVICE ID */
 function getDeviceId(){
  let id=localStorage.getItem("MY_DEVICE_ID");
@@ -315,7 +317,18 @@ function saveAdmin(){
  localStorage.milkman=milkmanInput.value;
  adminModal.style.display="none";
 }
+ 
+/* LOAD ADMIN DATA ON APP START */
+function loadAdmin(){
+ custPlot.value = localStorage.custPlot || "";
+ custAddr.value = localStorage.custAddr || "";
+ dailyQty.value = localStorage.dailyQty || "";
+ rateInput.value = localStorage.rate || "";
+ serviceInput.value = localStorage.service || "";
+ milkmanInput.value = localStorage.milkman || "";
+}
 
+ 
 /* MONTH BILL */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
