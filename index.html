@@ -309,7 +309,10 @@ function selectPickerDate(d,event){
 }
 
 /* ADMIN */
-function openAdmin(){adminModal.style.display="block";}
+function openAdmin(){
+ loadAdmin();
+ adminModal.style.display="block";
+}
 function saveAdmin(){
  localStorage.custPlot=custPlot.value;
  localStorage.custAddr=custAddr.value;
