@@ -14,22 +14,18 @@ body{font-family:Arial;margin:0;background:#f5f5f5}
 .badge{position:absolute;right:10px;top:10px;background:#ff9800;color:#fff;padding:4px 10px;border-radius:15px;font-size:12px}
 #subWhatsapp{position:absolute;right:10px;top:38px}
 #subWhatsapp button{background:#25D366;color:#fff;border:none;padding:4px 8px;border-radius:10px;font-size:11px}
-
 button,input,textarea{width:100%;padding:12px;margin-top:8px;font-size:16px}
 button{border:none;border-radius:6px}
 .blue{background:#2196f3;color:#fff}
 .green{background:#4caf50;color:#fff}
 .red{background:#f44336;color:#fff}
 .grey{background:#9e9e9e;color:#fff}
-
 .month-nav{display:flex;justify-content:space-between;padding:10px;background:#eee}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:10px}
 .day{background:#ddd;padding:12px;border-radius:6px;text-align:center;cursor:pointer}
 .day.red{background:#e53935;color:#fff}
 .day.green{background:#43a047;color:#fff}
 .day.blue{background:#1e88e5;color:#fff}
-.day.active{outline:3px solid #000}
-
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999}
 .modal-box{background:#fff;margin:5% auto;padding:15px;width:90%;max-height:85%;overflow:auto}
 </style>
@@ -132,10 +128,6 @@ button{border:none;border-radius:6px}
 const REGISTRY_URL="data/registry.json";
 const ADMIN_PHONE="917200893968";
 
-let data=JSON.parse(localStorage.MILK_DATA||"{}");
-let current=new Date(),selectedDate=null,from=null,to=null;
-let pickerDate=new Date(),pickingMode=null;
-
 /* DEVICE ID */
 function getDeviceId(){
  let id=localStorage.getItem("MY_DEVICE_ID");
@@ -146,14 +138,9 @@ function getDeviceId(){
  return id;
 }
 
-/* DATE FORMAT */
-function key(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
-function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
-
-/* TRIAL WHATSAPP */
+/* WHATSAPP */
 function openTrialWhatsapp(){
- let myDevice=getDeviceId();
- let msg=`Hello,\nI need Trial Unlock Password.\n\nMy Device ID:\n${myDevice}`;
+ let msg=`Hello,\nI need Trial Unlock Password.\n\nMy Device ID:\n${getDeviceId()}`;
  window.open("https://wa.me/"+ADMIN_PHONE+"?text="+encodeURIComponent(msg));
 }
 function openSubWhatsapp(){
@@ -168,8 +155,9 @@ async function unlockApp(){
 
  let record=registry[pwd];
  let myDevice=getDeviceId();
+
  if(record.used===true && record.device!==myDevice){
-   alert("This password is already used on another phone!");
+   alert("Password already used on another phone");
    return;
  }
 
@@ -178,9 +166,39 @@ async function unlockApp(){
    localStorage.removeItem("TRIAL_START");
  }else{
    localStorage.TRIAL_START=new Date().toISOString();
-   localStorage.removeItem("PAID_START");
  }
+
  startApp();
+}
+
+function lockExpired(msg){
+ alert(msg+"\nPlease get Subscription Password");
+ localStorage.removeItem("TRIAL_START");
+ localStorage.removeItem("PAID_START");
+ location.reload();
+}
+
+/* SUBSCRIPTION BADGE */
+function checkSubscription(){
+ const badge=statusBadge;
+ const today=new Date();
+
+ if(localStorage.PAID_START){
+   let s=new Date(localStorage.PAID_START);
+   let e=new Date(s); e.setDate(e.getDate()+365);
+   let d=Math.ceil((e-today)/86400000);
+   if(d<=0){lockExpired("Paid Subscription Expired");return;}
+   badge.innerText="Paid - "+d+" Days Left";
+   return;
+ }
+
+ if(localStorage.TRIAL_START){
+   let s=new Date(localStorage.TRIAL_START);
+   let e=new Date(s); e.setDate(e.getDate()+30);
+   let d=Math.ceil((e-today)/86400000);
+   if(d<=0){lockExpired("Trial Expired");return;}
+   badge.innerText="Trial - "+d+" Days Left";
+ }
 }
 
 function startApp(){
@@ -191,23 +209,20 @@ function startApp(){
  renderCalendar();
 }
 
-/* SUBSCRIPTION */
-function checkSubscription(){
- const badge=statusBadge;
- const today=new Date();
- if(localStorage.PAID_START){
-   let s=new Date(localStorage.PAID_START);
-   let e=new Date(s); e.setFullYear(e.getFullYear()+1);
-   badge.innerText="Paid Active till "+e.toLocaleDateString();
-   return;
+/* AUTO LOAD IF ACTIVE */
+window.onload=()=>{
+ if(localStorage.TRIAL_START || localStorage.PAID_START){
+   startApp();
  }
- if(localStorage.TRIAL_START){
-   let s=new Date(localStorage.TRIAL_START);
-   let e=new Date(s); e.setDate(e.getDate()+30);
-   let d=Math.ceil((e-today)/86400000);
-   badge.innerText="Trial - "+d+" Days Left";
- }
-}
+};
+
+/* DATE FORMAT */
+function key(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
+function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
+
+let data=JSON.parse(localStorage.MILK_DATA||"{}");
+let current=new Date(),selectedDate=null,from=null,to=null;
+let pickerDate=new Date(),pickingMode=null;
 
 /* CALENDAR */
 function renderCalendar(){
@@ -227,11 +242,9 @@ function renderCalendar(){
   el.innerText=i;
   el.onclick=()=>{
     selectedDate=d;
-    document.querySelectorAll("#calendar .day").forEach(x=>x.classList.remove("active"));
-    el.classList.add("active");
     let kk=key(d);
-    notQty.value=(data[kk]&&data[kk].not)?data[kk].not:"";
-    extraQty.value=(data[kk]&&data[kk].extra)?data[kk].extra:"";
+    notQty.value=(data[kk]?.not)||"";
+    extraQty.value=(data[kk]?.extra)||"";
   };
   calendar.appendChild(el);
  }
@@ -256,32 +269,6 @@ function saveExtra(){
  renderCalendar();
 }
 
-/* DATE PICKER */
-function setMode(m){pickingMode=m;openDatePicker();}
-function openDatePicker(){pickerDate=new Date();renderPickerCalendar();datePickerModal.style.display="block";}
-function changePickerMonth(v){pickerDate.setMonth(pickerDate.getMonth()+v);renderPickerCalendar();}
-function renderPickerCalendar(){
- pickerMonthTitle.innerText=pickerDate.toLocaleString("default",{month:"long",year:"numeric"});
- pickerCalendar.innerHTML="";
- let days=new Date(pickerDate.getFullYear(),pickerDate.getMonth()+1,0).getDate();
- for(let i=1;i<=days;i++){
-  let d=new Date(pickerDate.getFullYear(),pickerDate.getMonth(),i);
-  let el=document.createElement("div");
-  el.className="day";
-  el.innerText=i;
-  el.onclick=(e)=>selectPickerDate(d,e);
-  pickerCalendar.appendChild(el);
- }
-}
-function selectPickerDate(d,event){
- document.querySelectorAll("#pickerCalendar .day").forEach(x=>x.classList.remove("active"));
- event.target.classList.add("active");
- if(pickingMode==="from"){from=d;fromDate.value=fmt(d);datePickerModal.style.display="none";return;}
- if(pickingMode==="to"){to=d;toDate.value=fmt(d);datePickerModal.style.display="none";return;}
- if(pickingMode==="detailFrom"){window.df=d;pickingMode="detailTo";return;}
- if(pickingMode==="detailTo"){datePickerModal.style.display="none";viewDetailedReportByDate(window.df,d);return;}
-}
-
 /* ADMIN */
 function openAdmin(){loadAdmin();adminModal.style.display="block";}
 function saveAdmin(){
@@ -301,25 +288,41 @@ function loadAdmin(){
  serviceInput.value=localStorage.service||"";
  milkmanInput.value=localStorage.milkman||"";
 }
-/* MONTH BILL */
-function viewMonthBill(){
- let s = new Date(current.getFullYear(), current.getMonth(), 1);
- let e = new Date(current.getFullYear(), current.getMonth()+1, 0);
- buildBill(s,e);
+
+/* DATE PICKER */
+function setMode(m){pickingMode=m;openDatePicker();}
+function openDatePicker(){pickerDate=new Date();renderPickerCalendar();datePickerModal.style.display="block";}
+function changePickerMonth(v){pickerDate.setMonth(pickerDate.getMonth()+v);renderPickerCalendar();}
+function renderPickerCalendar(){
+ pickerMonthTitle.innerText=pickerDate.toLocaleString("default",{month:"long",year:"numeric"});
+ pickerCalendar.innerHTML="";
+ let days=new Date(pickerDate.getFullYear(),pickerDate.getMonth()+1,0).getDate();
+ for(let i=1;i<=days;i++){
+  let d=new Date(pickerDate.getFullYear(),pickerDate.getMonth(),i);
+  let el=document.createElement("div");
+  el.className="day"; el.innerText=i;
+  el.onclick=()=>{
+   if(pickingMode==="from"){from=d;fromDate.value=fmt(d);datePickerModal.style.display="none";}
+   if(pickingMode==="to"){to=d;toDate.value=fmt(d);datePickerModal.style.display="none";}
+   if(pickingMode==="detailFrom"){window.df=d;pickingMode="detailTo";}
+   if(pickingMode==="detailTo"){datePickerModal.style.display="none";viewDetailedReportByDate(window.df,d);}
+  };
+  pickerCalendar.appendChild(el);
+ }
 }
 
-/* PERIOD BILL */
+/* MONTH + PERIOD BILL */
+function viewMonthBill(){
+ let s=new Date(current.getFullYear(),current.getMonth(),1);
+ let e=new Date(current.getFullYear(),current.getMonth()+1,0);
+ buildBill(s,e);
+}
 function viewPeriodBill(){
- if(!from || !to){
-   alert("Select From and To dates");
-   return;
- }
+ if(!from||!to)return alert("Select From and To dates");
  buildBill(from,to);
 }
 
-
- 
-/* BUILD BILL (SORTED DATES) */
+/* BUILD MAIN BILL */
 function buildBill(s,e){
  let daily=+localStorage.dailyQty||0;
  let rate=+localStorage.rate||0;
@@ -327,7 +330,6 @@ function buildBill(s,e){
  let days=Math.floor((e-s)/86400000)+1;
  let base=daily*days,extra=0,not=0;
  let extraLines="",notLines="";
-
  let keys=Object.keys(data).sort();
 
  for(let k of keys){
@@ -349,54 +351,35 @@ function buildBill(s,e){
 `MILK DIARY BILL
 
 Plot / Door No:
-${localStorage.custPlot||""}
+${localStorage.custPlot}
 
 Address:
-${localStorage.custAddr||""}
+${localStorage.custAddr}
 
 Period:
 ${fmt(s)} to ${fmt(e)}
 
 --------------------------------
-
-Daily Milk:
-${daily} pkt × ${days} days = ${base} pkt
-
+Daily Milk: ${daily} pkt × ${days} = ${base}
 Extra Milk:
 ${extraLines}
-Total Extra: ${extra} pkt
-
 Not Supplied:
 ${notLines}
-Total Not Supplied: ${not} pkt
-
 --------------------------------
-
-Final Milk:
-${base} + ${extra} - ${not} = ${finalMilk} pkt
-
-Milk Rate:
-₹${rate} per pkt
-
-Milk Amount:
-${finalMilk} × ₹${rate} = ₹${milkAmt}
-
-Service Charge:
-₹${service}
-
+Final Milk: ${finalMilk} pkt
+Milk Amount: ₹${milkAmt}
+Service Charge: ₹${service}
 --------------------------------
-
-GRAND TOTAL:
-₹${total}
-
+GRAND TOTAL: ₹${total}
 --------------------------------
 Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
 
-/* DETAILED REPORT SORTED */
+/* ===== DETAILED REPORT BILL ===== */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
+
 function viewDetailedReportByDate(s,e){
  let extraLines="",notLines="";
  let extraTotal=0,notTotal=0;
@@ -416,8 +399,8 @@ function viewDetailedReportByDate(s,e){
  billPreview.innerText=
 `EXTRA & NOT SUPPLIED REPORT
 
-Door No: ${localStorage.custPlot||""}
-Address: ${localStorage.custAddr||""}
+Door No: ${localStorage.custPlot}
+Address: ${localStorage.custAddr}
 Period: ${fmt(s)} to ${fmt(e)}
 
 EXTRA SUPPLIED:
