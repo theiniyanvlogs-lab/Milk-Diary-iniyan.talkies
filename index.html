@@ -128,6 +128,10 @@ button{border:none;border-radius:6px}
 const REGISTRY_URL="data/registry.json";
 const ADMIN_PHONE="917200893968";
 
+let data = JSON.parse(localStorage.MILK_DATA || "{}");
+let current = new Date(), selectedDate=null, from=null, to=null;
+let pickerDate=new Date(), pickingMode=null;
+
 /* DEVICE ID */
 function getDeviceId(){
  let id=localStorage.getItem("MY_DEVICE_ID");
@@ -137,6 +141,10 @@ function getDeviceId(){
  }
  return id;
 }
+
+/* DATE FORMAT */
+function key(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
+function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
 
 /* WHATSAPP */
 function openTrialWhatsapp(){
@@ -156,7 +164,7 @@ async function unlockApp(){
  let record=registry[pwd];
  let myDevice=getDeviceId();
 
- if(record.used===true && record.device!==myDevice){
+ if(record.used && record.device!==myDevice){
    alert("Password already used on another phone");
    return;
  }
@@ -167,15 +175,7 @@ async function unlockApp(){
  }else{
    localStorage.TRIAL_START=new Date().toISOString();
  }
-
  startApp();
-}
-
-function lockExpired(msg){
- alert(msg+"\nPlease get Subscription Password");
- localStorage.removeItem("TRIAL_START");
- localStorage.removeItem("PAID_START");
- location.reload();
 }
 
 /* SUBSCRIPTION BADGE */
@@ -187,7 +187,7 @@ function checkSubscription(){
    let s=new Date(localStorage.PAID_START);
    let e=new Date(s); e.setDate(e.getDate()+365);
    let d=Math.ceil((e-today)/86400000);
-   if(d<=0){lockExpired("Paid Subscription Expired");return;}
+   if(d<=0){alert("Paid Subscription Expired");location.reload();}
    badge.innerText="Paid - "+d+" Days Left";
    return;
  }
@@ -196,7 +196,7 @@ function checkSubscription(){
    let s=new Date(localStorage.TRIAL_START);
    let e=new Date(s); e.setDate(e.getDate()+30);
    let d=Math.ceil((e-today)/86400000);
-   if(d<=0){lockExpired("Trial Expired");return;}
+   if(d<=0){alert("Trial Expired");location.reload();}
    badge.innerText="Trial - "+d+" Days Left";
  }
 }
@@ -209,20 +209,11 @@ function startApp(){
  renderCalendar();
 }
 
-/* AUTO LOAD IF ACTIVE */
 window.onload=()=>{
  if(localStorage.TRIAL_START || localStorage.PAID_START){
    startApp();
  }
-};
-
-/* DATE FORMAT */
-function key(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
-function fmt(d){return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear();}
-
-let data=JSON.parse(localStorage.MILK_DATA||"{}");
-let current=new Date(),selectedDate=null,from=null,to=null;
-let pickerDate=new Date(),pickingMode=null;
+}
 
 /* CALENDAR */
 function renderCalendar(){
@@ -292,7 +283,6 @@ function loadAdmin(){
 /* DATE PICKER */
 function setMode(m){pickingMode=m;openDatePicker();}
 function openDatePicker(){pickerDate=new Date();renderPickerCalendar();datePickerModal.style.display="block";}
-function changePickerMonth(v){pickerDate.setMonth(pickerDate.getMonth()+v);renderPickerCalendar();}
 function renderPickerCalendar(){
  pickerMonthTitle.innerText=pickerDate.toLocaleString("default",{month:"long",year:"numeric"});
  pickerCalendar.innerHTML="";
@@ -311,64 +301,50 @@ function renderPickerCalendar(){
  }
 }
 
-/* MONTH + PERIOD BILL */
+/* BILLS */
 function viewMonthBill(){
  let s=new Date(current.getFullYear(),current.getMonth(),1);
  let e=new Date(current.getFullYear(),current.getMonth()+1,0);
  buildBill(s,e);
 }
 function viewPeriodBill(){
- if(!from||!to)return alert("Select From and To dates");
+ if(!from||!to)return alert("Select From and To");
  buildBill(from,to);
 }
 
-<script>
+/* BUILD FINAL + PERIOD BILL */
 function buildBill(s,e){
- let daily = +localStorage.dailyQty || 0;
- let rate  = +localStorage.rate || 0;
- let service = +localStorage.service || 0;
-
- let days = Math.floor((e - s) / 86400000) + 1;
- let base = daily * days;
- let extra = 0;
- let not = 0;
-
- let extraLines = "";
- let notLines = "";
-
- // Sort dates ascending
- let keys = Object.keys(data).sort();
+ let daily=+localStorage.dailyQty||0;
+ let rate=+localStorage.rate||0;
+ let service=+localStorage.service||0;
+ let days=Math.floor((e-s)/86400000)+1;
+ let base=daily*days, extra=0, not=0;
+ let extraLines="", notLines="";
+ let keys=Object.keys(data).sort();
 
  for(let k of keys){
-   let d = new Date(k+"T00:00:00");
-   if(d >= s && d <= e){
-     if(data[k].extra){
-       extra += data[k].extra;
-       extraLines += fmt(d)+" : "+data[k].extra+" pkt\n";
-     }
-     if(data[k].not){
-       not += data[k].not;
-       notLines += fmt(d)+" : "+data[k].not+" pkt\n";
-     }
-   }
+  let d=new Date(k+"T00:00:00");
+  if(d>=s && d<=e){
+   if(data[k].extra){extra+=data[k].extra;extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";}
+   if(data[k].not){not+=data[k].not;notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
+  }
  }
 
- // If no entries
- if(extraLines === "") extraLines = "Nil\n";
- if(notLines === "") notLines = "Nil\n";
+ if(extraLines==="") extraLines="Nil\n";
+ if(notLines==="") notLines="Nil\n";
 
- let finalMilk = base + extra - not;
- let milkAmt = finalMilk * rate;
- let total = milkAmt + service;
+ let finalMilk=base+extra-not;
+ let milkAmt=finalMilk*rate;
+ let total=milkAmt+service;
 
- billPreview.innerText =
+ billPreview.innerText=
 `MILK DIARY BILL
 
 Plot / Door No:
-${localStorage.custPlot || ""}
+${localStorage.custPlot}
 
 Address:
-${localStorage.custAddr || ""}
+${localStorage.custAddr}
 
 Period:
 ${fmt(s)} to ${fmt(e)}
@@ -410,9 +386,8 @@ Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
-</script>
 
-/* ===== DETAILED REPORT BILL ===== */
+/* DETAILED REPORT */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
 
 function viewDetailedReportByDate(s,e){
@@ -451,7 +426,7 @@ Powered by Milk Diary - iniyan.talkies`;
  billModal.style.display="block";
 }
 
-/* SEND TO WHATSAPP */
+/* SEND WHATSAPP */
 function sendToMilkman(){
  window.open("https://wa.me/91"+localStorage.milkman+"?text="+encodeURIComponent(billPreview.innerText));
 }
