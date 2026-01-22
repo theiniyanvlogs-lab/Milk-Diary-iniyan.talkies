@@ -322,60 +322,95 @@ function viewPeriodBill(){
  buildBill(from,to);
 }
 
-/* BUILD MAIN BILL */
+<script>
 function buildBill(s,e){
- let daily=+localStorage.dailyQty||0;
- let rate=+localStorage.rate||0;
- let service=+localStorage.service||0;
- let days=Math.floor((e-s)/86400000)+1;
- let base=daily*days,extra=0,not=0;
- let extraLines="",notLines="";
- let keys=Object.keys(data).sort();
+ let daily = +localStorage.dailyQty || 0;
+ let rate  = +localStorage.rate || 0;
+ let service = +localStorage.service || 0;
+
+ let days = Math.floor((e - s) / 86400000) + 1;
+ let base = daily * days;
+ let extra = 0;
+ let not = 0;
+
+ let extraLines = "";
+ let notLines = "";
+
+ // Sort dates ascending
+ let keys = Object.keys(data).sort();
 
  for(let k of keys){
-  let d=new Date(k+"T00:00:00");
-  if(d>=s && d<=e){
-   if(data[k].extra){extra+=data[k].extra;extraLines+=fmt(d)+" : "+data[k].extra+" pkt\n";}
-   if(data[k].not){not+=data[k].not;notLines+=fmt(d)+" : "+data[k].not+" pkt\n";}
-  }
+   let d = new Date(k+"T00:00:00");
+   if(d >= s && d <= e){
+     if(data[k].extra){
+       extra += data[k].extra;
+       extraLines += fmt(d)+" : "+data[k].extra+" pkt\n";
+     }
+     if(data[k].not){
+       not += data[k].not;
+       notLines += fmt(d)+" : "+data[k].not+" pkt\n";
+     }
+   }
  }
 
- if(extraLines==="") extraLines="Nil\n";
- if(notLines==="") notLines="Nil\n";
+ // If no entries
+ if(extraLines === "") extraLines = "Nil\n";
+ if(notLines === "") notLines = "Nil\n";
 
- let finalMilk=base+extra-not;
- let milkAmt=finalMilk*rate;
- let total=milkAmt+service;
+ let finalMilk = base + extra - not;
+ let milkAmt = finalMilk * rate;
+ let total = milkAmt + service;
 
- billPreview.innerText=
+ billPreview.innerText =
 `MILK DIARY BILL
 
 Plot / Door No:
-${localStorage.custPlot}
+${localStorage.custPlot || ""}
 
 Address:
-${localStorage.custAddr}
+${localStorage.custAddr || ""}
 
 Period:
 ${fmt(s)} to ${fmt(e)}
 
 --------------------------------
-Daily Milk: ${daily} pkt × ${days} = ${base}
+
+Daily Milk:
+${daily} pkt × ${days} days = ${base} pkt
+
 Extra Milk:
 ${extraLines}
+Total Extra: ${extra} pkt
+
 Not Supplied:
 ${notLines}
+Total Not Supplied: ${not} pkt
+
 --------------------------------
-Final Milk: ${finalMilk} pkt
-Milk Amount: ₹${milkAmt}
-Service Charge: ₹${service}
+
+Final Milk:
+${base} + ${extra} - ${not} = ${finalMilk} pkt
+
+Milk Rate:
+₹${rate} per pkt
+
+Milk Amount:
+${finalMilk} × ₹${rate} = ₹${milkAmt}
+
+Service Charge:
+₹${service}
+
 --------------------------------
-GRAND TOTAL: ₹${total}
+
+GRAND TOTAL:
+₹${total}
+
 --------------------------------
 Powered by Milk Diary - iniyan.talkies`;
 
  billModal.style.display="block";
 }
+</script>
 
 /* ===== DETAILED REPORT BILL ===== */
 function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
