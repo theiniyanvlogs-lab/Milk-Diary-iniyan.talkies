@@ -26,6 +26,7 @@ button{border:none;border-radius:6px}
 .day.red{background:#e53935;color:#fff}
 .day.green{background:#43a047;color:#fff}
 .day.blue{background:#1e88e5;color:#fff}
+.day.active{outline:3px solid #000}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999}
 .modal-box{background:#fff;margin:5% auto;padding:15px;width:90%;max-height:85%;overflow:auto}
 </style>
@@ -128,9 +129,9 @@ button{border:none;border-radius:6px}
 const REGISTRY_URL="data/registry.json";
 const ADMIN_PHONE="917200893968";
 
-let data = JSON.parse(localStorage.MILK_DATA || "{}");
-let current = new Date(), selectedDate=null, from=null, to=null;
-let pickerDate=new Date(), pickingMode=null;
+let data=JSON.parse(localStorage.MILK_DATA||"{}");
+let current=new Date(),selectedDate=null,from=null,to=null;
+let pickerDate=new Date(),pickingMode=null;
 
 /* DEVICE ID */
 function getDeviceId(){
@@ -175,10 +176,11 @@ async function unlockApp(){
  }else{
    localStorage.TRIAL_START=new Date().toISOString();
  }
+
  startApp();
 }
 
-/* SUBSCRIPTION BADGE */
+/* SUBSCRIPTION */
 function checkSubscription(){
  const badge=statusBadge;
  const today=new Date();
@@ -220,19 +222,25 @@ function renderCalendar(){
  monthTitle.innerText=current.toLocaleString("default",{month:"long",year:"numeric"});
  calendar.innerHTML="";
  let days=new Date(current.getFullYear(),current.getMonth()+1,0).getDate();
+
  for(let i=1;i<=days;i++){
   let d=new Date(current.getFullYear(),current.getMonth(),i);
   let el=document.createElement("div");
   el.className="day";
   let k=key(d);
+
   if(data[k]){
    if(data[k].not && data[k].extra) el.classList.add("blue");
    else if(data[k].not) el.classList.add("red");
    else if(data[k].extra) el.classList.add("green");
   }
+
   el.innerText=i;
   el.onclick=()=>{
     selectedDate=d;
+    document.querySelectorAll("#calendar .day").forEach(x=>x.classList.remove("active"));
+    el.classList.add("active");
+
     let kk=key(d);
     notQty.value=(data[kk]?.not)||"";
     extraQty.value=(data[kk]?.extra)||"";
@@ -280,9 +288,17 @@ function loadAdmin(){
  milkmanInput.value=localStorage.milkman||"";
 }
 
-/* DATE PICKER */
+/* DATE PICKERS */
 function setMode(m){pickingMode=m;openDatePicker();}
-function openDatePicker(){pickerDate=new Date();renderPickerCalendar();datePickerModal.style.display="block";}
+function openDatePicker(){
+ pickerDate=new Date();
+ renderPickerCalendar();
+ datePickerModal.style.display="block";
+}
+function changePickerMonth(v){
+ pickerDate.setMonth(pickerDate.getMonth()+v);
+ renderPickerCalendar();
+}
 function renderPickerCalendar(){
  pickerMonthTitle.innerText=pickerDate.toLocaleString("default",{month:"long",year:"numeric"});
  pickerCalendar.innerHTML="";
@@ -290,14 +306,39 @@ function renderPickerCalendar(){
  for(let i=1;i<=days;i++){
   let d=new Date(pickerDate.getFullYear(),pickerDate.getMonth(),i);
   let el=document.createElement("div");
-  el.className="day"; el.innerText=i;
-  el.onclick=()=>{
-   if(pickingMode==="from"){from=d;fromDate.value=fmt(d);datePickerModal.style.display="none";}
-   if(pickingMode==="to"){to=d;toDate.value=fmt(d);datePickerModal.style.display="none";}
-   if(pickingMode==="detailFrom"){window.df=d;pickingMode="detailTo";}
-   if(pickingMode==="detailTo"){datePickerModal.style.display="none";viewDetailedReportByDate(window.df,d);}
-  };
+  el.className="day";
+  el.innerText=i;
+  el.onclick=(e)=>selectPickerDate(d,e);
   pickerCalendar.appendChild(el);
+ }
+}
+
+function selectPickerDate(d,event){
+ document.querySelectorAll("#pickerCalendar .day").forEach(x=>x.classList.remove("active"));
+ event.target.classList.add("active");
+
+ if(pickingMode==="detailFrom"){
+   window.df=d;
+   pickingMode="detailTo";
+   return;
+ }
+
+ if(pickingMode==="detailTo"){
+   datePickerModal.style.display="none";
+   viewDetailedReportByDate(window.df,d);
+   return;
+ }
+
+ if(pickingMode==="from"){
+   from=d; fromDate.value=fmt(d);
+   datePickerModal.style.display="none";
+   return;
+ }
+
+ if(pickingMode==="to"){
+   to=d; toDate.value=fmt(d);
+   datePickerModal.style.display="none";
+   return;
  }
 }
 
@@ -308,18 +349,18 @@ function viewMonthBill(){
  buildBill(s,e);
 }
 function viewPeriodBill(){
- if(!from||!to)return alert("Select From and To");
+ if(!from||!to)return alert("Select From and To dates");
  buildBill(from,to);
 }
 
-/* BUILD FINAL + PERIOD BILL */
+/* FINAL + PERIOD BILL */
 function buildBill(s,e){
  let daily=+localStorage.dailyQty||0;
  let rate=+localStorage.rate||0;
  let service=+localStorage.service||0;
  let days=Math.floor((e-s)/86400000)+1;
- let base=daily*days, extra=0, not=0;
- let extraLines="", notLines="";
+ let base=daily*days,extra=0,not=0;
+ let extraLines="",notLines="";
  let keys=Object.keys(data).sort();
 
  for(let k of keys){
@@ -388,7 +429,10 @@ Powered by Milk Diary - iniyan.talkies`;
 }
 
 /* DETAILED REPORT */
-function openDetailedDatePicker(){pickingMode="detailFrom";openDatePicker();}
+function openDetailedDatePicker(){
+ pickingMode="detailFrom";
+ openDatePicker();
+}
 
 function viewDetailedReportByDate(s,e){
  let extraLines="",notLines="";
