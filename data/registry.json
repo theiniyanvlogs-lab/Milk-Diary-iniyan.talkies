@@ -8,7 +8,7 @@
   "MDP-563920": { "used": false, "true": "DEV-1dlnn64xgtw" },
   "MDP-840192": { "used": true, "device": "DEV-anpcdfaajz" },
   "MDP-275938": { "used": true, "device": "DEV-s5flkmhcubl" },
-  "MDP-990173": { "used": false, "device": "" },
+  "MDP-990173": { "used": true, "device": "DEV-m2j9kfngvvm" },
 
   "MDP-418275": { "used": false, "device": "" },
   "MDP-662901": { "used": false, "device": "" },
